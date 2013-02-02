@@ -1,1 +1,1 @@
-CSE502 HW assignment solutions
+CSE504 HW assignment solutions
