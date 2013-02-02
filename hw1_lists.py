@@ -41,6 +41,7 @@ def ssa(stmts):
                    else:
                        suffix_num += 1
                    var += str(suffix_num)
+            # TODO: Append is not what we're looking for, I'm not able to embed the rhsvars list;
             ssa_stmts.append(var)
 
     return ssa_stmts     
