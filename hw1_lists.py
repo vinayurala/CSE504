@@ -1,7 +1,4 @@
-import math
-
 def dup(a):
-
     a.sort()
     for i1, i2 in zip(a, a[1:]):
         if (i1 == i2):
