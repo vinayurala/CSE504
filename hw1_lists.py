@@ -29,19 +29,23 @@ def def_use(stmts):
 def ssa(stmts):
     ssa_stmts = []
     defined_vars = []
+    temp_list = []
     for inner_l in stmts:
         for var in inner_l:
             if((not isinstance(var, list))):
+                del temp_list[:]
                 if(not var in defined_vars):
                     defined_vars.append(var)
                 else:
                    suffix_num = var[-1:]
+                   print suffix_num
                    if(not suffix_num.isdigit()):
                        suffix_num = 1
                    else:
                        suffix_num += 1
                    var += str(suffix_num)
-            # TODO: Append is not what we're looking for, I'm not able to embed the rhsvars list;
+                   # TODO: Append is not what we're looking for, I'm not able to embed the rhsvars list properly;
+                temp_list.append(var)
             ssa_stmts.append(var)
 
     return ssa_stmts     
@@ -50,7 +54,8 @@ def ssa(stmts):
 a = [1, 2, 3, 5, 2, 4]
 #stmts = [ ["x", []], ["y", ["x"]], ["z", ["x", "y"]], ["x", ["z", "y"]] ]
 #stmts = [ ["x", []], ["y", ["y", "x"]], ["z", ["x", "w"]], ["x", ["x", "z"]] ]
-stmts = [ ["x", []], ["y", ["x"]], ["x", ["x", "y"]], ["z", ["x", "y"]], ["y", ["z", "x"]] ]
+#stmts = [ ["x", []], ["y", ["x"]], ["x", ["x", "y"]], ["z", ["x", "y"]], ["y", ["z", "x"]] ]
+stmts = [ ["x", []], ["y", ["x"]], ["x", ["x", "y"]], ["x", ["y", "x"]], ["y", ["y", "x"]] ]
 res = dup(a) 
 print res
 unused_vars = def_use(stmts)
