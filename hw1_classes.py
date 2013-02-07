@@ -5,10 +5,20 @@ class PBF:
         postfix_str = self.__str__()
         for idx in range(len(postfix_str)):
             if(postfix_str[idx] == '!'):
+                # Go back 2 postions(including space), and check
                 if(postfix_str[idx - 2] == '&' or postfix_str[idx - 2] == '|'):
                     return False
         
         return True
+
+    def toNNF(self):
+        nnf_str = []
+        
+        return nnf_str
+
+    def parse(postfix_str):
+        return 
+        
 
 class OR(PBF):
     
@@ -49,7 +59,7 @@ class PROP(PBF):
 
 
 #PBFObj = AND(PROP("x"), NOT(OR(PROP("y"), PROP("z"))))
-PBFObj = AND(PROP("x"), OR(NOT(PROP("y")), NOT(PROP("z"))))
+#PBFObj = AND(PROP("x"), AND(NOT(PROP("y")), NOT(PROP("z"))))
 print PBFObj
 res = PBFObj.isNNF()
 if(res == True):
@@ -57,3 +67,5 @@ if(res == True):
 else:
     print "Given PBF is not in NNF"
 
+#nnf_str = PBFObj.toNNF()
+#print "NNF string = " + nnf_str
