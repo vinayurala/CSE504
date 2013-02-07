@@ -1,6 +1,14 @@
-
 class PBF:
-    pass
+    # pass
+
+    def isNNF(self):
+        postfix_str = self.__str__()
+        for idx in range(len(postfix_str)):
+            if(postfix_str[idx] == '!'):
+                if(postfix_str[idx - 2] == '&' or postfix_str[idx - 2] == '|'):
+                    return False
+        
+        return True
 
 class OR(PBF):
     
@@ -38,3 +46,14 @@ class PROP(PBF):
 
     def __str__(self):
         return self.prop
+
+
+#PBFObj = AND(PROP("x"), NOT(OR(PROP("y"), PROP("z"))))
+PBFObj = AND(PROP("x"), OR(NOT(PROP("y")), NOT(PROP("z"))))
+print PBFObj
+res = PBFObj.isNNF()
+if(res == True):
+    print "Given PBF is in NNF"
+else:
+    print "Given PBF is not in NNF"
+
