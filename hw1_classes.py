@@ -15,6 +15,19 @@ class PBF:
 
     def toNNF(self):
         nnfObj = PBF()
+        postfix_str = self.__str__()
+        postfix_str = postfix_str.replace(' ', '')
+        temp_stack = []
+        for idx in range(len(postfix_str)):
+            if(postfix_str[idx] == '!'):
+                t1 = str(temp_stack.pop())
+                t1 = t1.replace(' ' , '')
+                if(len(t1) == 3):
+                    if(t1[1] == '|'):
+                        t1[1] = '&'
+                    else:
+                        t1[1] = '|'
+                t2 = '!' + t1[0] + ' ' + t1[1] + ' ' +  t1[2]
         return nnfObj        
 
 class OR(PBF):
@@ -73,12 +86,16 @@ def parse(postfix_str):
             t1 = t2 + " " + t1 + " " + '&'
             temp_stack.append(t1)
 
-        else:
+        elif (postfix_str[it] == '|'):
             t1 = temp_stack.pop()
             t2 = temp_stack.pop()
             PBFObj = OR(PROP(t2), PROP(t1))
             t1 = t2 + " " + t1 + " " + '|'
             temp_stack.append(t1)
+
+        else:
+            print "Error - Unexpected character: " + postfix_str[it]
+            return None
 
     del temp_stack[:]
     return PBFObj
@@ -104,4 +121,5 @@ else:
 expr_str = "x y ! z ! | &"
 print "String to parse function = " + expr_str
 PBFObj = parse(expr_str)
-print "PBFObj from parse function: " + PBFObj.__str__()
+if (not PBFObj is None):
+    print "PBFObj from parse function: " + PBFObj.__str__()
