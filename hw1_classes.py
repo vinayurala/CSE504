@@ -6,7 +6,6 @@ class PBF:
         postfix_str = postfix_str.replace(' ', '')
         for idx in range(len(postfix_str)):
             if(postfix_str[idx] == '!'):
-                # Go back 2 postions(including space), and check
                 if(not postfix_str[idx - 1].isalpha()):
                     return False
         
@@ -57,14 +56,12 @@ class PBF:
                         nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
                         
                 elif(len(t1) > 3):
-                    if(t1.find('!') > 0):
-                        t1 = t1.replace('!' , '')
-                        t2 = self.__apply_demorgans__(t1)
-                        temp_stack.append(t2)
-                        if(t1[1] == '&'):
-                            nnfObj = AND(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
-                        else:
-                            nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
+                    t2 = self.__apply_demorgans__(t1)
+                    temp_stack.append(t2)
+                    if(t1[1] == '&'):
+                        nnfObj = AND(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
+                    else:
+                        nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
 
                 else:
                     t1 = t1 + " !"
