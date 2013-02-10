@@ -1,4 +1,3 @@
-
 class PBF:
     # pass
 
@@ -23,11 +22,37 @@ class PBF:
                 t1 = str(temp_stack.pop())
                 t1 = t1.replace(' ' , '')
                 if(len(t1) == 3):
-                    if(t1[1] == '|'):
-                        t1[1] = '&'
+                    if(t1[2] == '|'):
+                        t1 = t1.replace('|', '&')
                     else:
-                        t1[1] = '|'
-                t2 = '!' + t1[0] + ' ' + t1[1] + ' ' +  t1[2]
+                        t1 = t1.replace('&', '|')
+                    t2 = t1[0] + " ! "  + t1[1] + " ! " + t1[2]
+                    temp_stack.append(t2)
+                    if(t1[1] == '&'):
+                        nnfObj = AND(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
+                    else:
+                        nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
+                else:
+                    t1 = '!' + t1
+                    nnfObj = NOT(PROP(t1))
+                    temp_stack.append(t1)
+            elif(postfix_str[idx] == '&'):
+                t1 = temp_stack.pop()
+                t2 = temp_stack.pop()
+                nnfObj = AND(PROP(t2), PROP(t1))
+                t1 = t2 + ' ' + t1 + " &"
+                temp_stack.append(t1)
+            
+            elif (postfix_str[idx] == '|'):
+                t1 = temp_stack.pop()
+                t2 = temp_stack.pop()
+                nnfObj = OR(PROP(t2), PROP(t1))
+                t1 = t2 + ' ' + t1 + "|"
+                temp_stack.append(t1)
+
+            else:
+                temp_stack.append(postfix_str[idx])
+
         return nnfObj        
 
 class OR(PBF):
@@ -69,6 +94,7 @@ def parse(postfix_str):
     PBFObj = PBF()
     temp_stack = []
     postfix_str = postfix_str.replace(' ', '')
+
     for it in range(len(postfix_str)):
         if (postfix_str[it].isalpha()):
             temp_stack.append(postfix_str[it])
@@ -101,9 +127,9 @@ def parse(postfix_str):
     return PBFObj
 
 
-PBFObj = AND(PROP("x"), NOT(OR(PROP("y"), PROP("z"))))
+#PBFObj = AND(PROP("x"), NOT(OR(PROP("y"), PROP("z"))))
 #PBFObj = AND(PROP("x"), AND(NOT(PROP("y")), NOT(PROP("z"))))
-#PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
+PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
 #PBFObj = AND(PROP("w"), OR(PROP("x"), OR(PROP("y"), NOT(PROP("z")))))
 print "Defined PBF Object: "
 print PBFObj
@@ -113,11 +139,12 @@ if(res == True):
 else:
     print "Given PBF is not in NNF"
 
-#nnfObj = PBFObj.toNNF()
-#if(PBFObj.isNNF()):
-#    print "NNF string = " + PBFObj.__str__()
-#else:
-#    print nnfObj
+nnfObj = PBFObj.toNNF()
+if(PBFObj.isNNF()):
+    print "NNF string = " + PBFObj.__str__()
+else:
+    print "NNF string = " + nnfObj.__str__()
+
 expr_str = "x y ! z ! | &"
 print "String to parse function = " + expr_str
 PBFObj = parse(expr_str)
