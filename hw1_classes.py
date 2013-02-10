@@ -7,7 +7,7 @@ class PBF:
         for idx in range(len(postfix_str)):
             if(postfix_str[idx] == '!'):
                 # Go back 2 postions(including space), and check
-                if(postfix_str[idx - 1] == '&' or postfix_str[idx - 1] == '|'):
+                if(postfix_str[idx - 1] == '&' or postfix_str[idx - 1] == '|' or postfix_str[idx - 1] == '!'):
                     return False
         
         return True
