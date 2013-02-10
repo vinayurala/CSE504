@@ -7,10 +7,37 @@ class PBF:
         for idx in range(len(postfix_str)):
             if(postfix_str[idx] == '!'):
                 # Go back 2 postions(including space), and check
-                if(postfix_str[idx - 1] == '&' or postfix_str[idx - 1] == '|' or postfix_str[idx - 1] == '!'):
+                if(not postfix_str[idx - 1].isalpha()):
                     return False
         
         return True
+
+    def __apply_demorgans__(self, t1):
+       # if(t1[2] == '|'):
+       #     t1 = t1.replace('|', '&')
+       #     t2 = t1[0] + " ! "  + t1[1] + " ! " + t1[2]
+       # elif(t1[2] == '&'):
+       #     t1 = t1.replace('&', '|')
+       #     t2 = t1[0] + " ! "  + t1[1] + " ! " + t1[2]
+       # else:
+       #     t2 = t1[0]
+        t2 = str()
+        for it in t1:
+            if (it.isalpha()):
+                print it
+                t2 += it + "! "
+            elif(it == '|'):
+                t2 += '&'
+            elif(it == '&'):
+                t2 += '|'       
+            else:
+                continue
+             
+            t2 += ' '
+        print t2
+        t2 = t2.replace("! !", "")
+
+        return t2
 
     def toNNF(self):
         nnfObj = PBF()
@@ -22,18 +49,25 @@ class PBF:
                 t1 = str(temp_stack.pop())
                 t1 = t1.replace(' ' , '')
                 if(len(t1) == 3):
-                    if(t1[2] == '|'):
-                        t1 = t1.replace('|', '&')
-                    else:
-                        t1 = t1.replace('&', '|')
-                    t2 = t1[0] + " ! "  + t1[1] + " ! " + t1[2]
+                    t2 = self.__apply_demorgans__(t1)
                     temp_stack.append(t2)
                     if(t1[1] == '&'):
                         nnfObj = AND(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
                     else:
                         nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
+                        
+                elif(len(t1) > 3):
+                    if(t1.find('!') > 0):
+                        t1 = t1.replace('!' , '')
+                        t2 = self.__apply_demorgans__(t1)
+                        temp_stack.append(t2)
+                        if(t1[1] == '&'):
+                            nnfObj = AND(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
+                        else:
+                            nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
+
                 else:
-                    t1 = '!' + t1
+                    t1 = t1 + " !"
                     nnfObj = NOT(PROP(t1))
                     temp_stack.append(t1)
             elif(postfix_str[idx] == '&'):
@@ -47,7 +81,7 @@ class PBF:
                 t1 = temp_stack.pop()
                 t2 = temp_stack.pop()
                 nnfObj = OR(PROP(t2), PROP(t1))
-                t1 = t2 + ' ' + t1 + "|"
+                t1 = t2 + ' ' + t1 + " |"
                 temp_stack.append(t1)
 
             else:
@@ -139,10 +173,10 @@ if(res == True):
 else:
     print "Given PBF is not in NNF"
 
-nnfObj = PBFObj.toNNF()
 if(PBFObj.isNNF()):
     print "NNF string = " + PBFObj.__str__()
 else:
+    nnfObj = PBFObj.toNNF()
     print "NNF string = " + nnfObj.__str__()
 
 expr_str = "x y ! z ! | &"
