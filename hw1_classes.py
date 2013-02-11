@@ -12,28 +12,18 @@ class PBF:
         return True
 
     def __apply_demorgans__(self, t1):
-       # if(t1[2] == '|'):
-       #     t1 = t1.replace('|', '&')
-       #     t2 = t1[0] + " ! "  + t1[1] + " ! " + t1[2]
-       # elif(t1[2] == '&'):
-       #     t1 = t1.replace('&', '|')
-       #     t2 = t1[0] + " ! "  + t1[1] + " ! " + t1[2]
-       # else:
-       #     t2 = t1[0]
         t2 = str()
         for it in t1:
             if (it.isalpha()):
-                print it
-                t2 += it + "! "
+                t2 += it + "!"
             elif(it == '|'):
                 t2 += '&'
             elif(it == '&'):
                 t2 += '|'       
             else:
-                continue
+                t2 += "!"
              
             t2 += ' '
-        print t2
         t2 = t2.replace("! !", "")
 
         return t2
@@ -159,12 +149,13 @@ def parse(postfix_str):
 
 
 #PBFObj = AND(PROP("x"), NOT(OR(PROP("y"), PROP("z"))))
-#PBFObj = AND(PROP("x"), AND(NOT(PROP("y")), NOT(PROP("z"))))
-PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
+PBFObj = AND(PROP("x"), AND(NOT(PROP("y")), NOT(PROP("z"))))
+#PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
 #PBFObj = AND(PROP("w"), OR(PROP("x"), OR(PROP("y"), NOT(PROP("z")))))
 print "Defined PBF Object: "
 print PBFObj
 res = PBFObj.isNNF()
+
 if(res == True):
     print "Given PBF is in NNF"
 else:
