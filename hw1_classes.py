@@ -15,13 +15,13 @@ class PBF:
         t2 = str()
         for it in t1:
             if (it.isalpha()):
-                t2 += it + "!"
+                t2 += it + '!'
             elif(it == '|'):
                 t2 += '&'
             elif(it == '&'):
                 t2 += '|'       
             else:
-                t2 += "!"
+                t2 += '!'
              
             t2 += ' '
         t2 = t2.replace("! !", "")
@@ -54,7 +54,7 @@ class PBF:
                         nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
 
                 else:
-                    t1 = t1 + " !"
+                    t1 = t1 + " ! "
                     nnfObj = NOT(PROP(t1))
                     temp_stack.append(t1)
             elif(postfix_str[idx] == '&'):
@@ -149,8 +149,8 @@ def parse(postfix_str):
 
 
 #PBFObj = AND(PROP("x"), NOT(OR(PROP("y"), PROP("z"))))
-PBFObj = AND(PROP("x"), AND(NOT(PROP("y")), NOT(PROP("z"))))
-#PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
+#PBFObj = AND(PROP("x"), AND(NOT(PROP("y")), NOT(PROP("z"))))
+PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
 #PBFObj = AND(PROP("w"), OR(PROP("x"), OR(PROP("y"), NOT(PROP("z")))))
 print "Defined PBF Object: "
 print PBFObj
