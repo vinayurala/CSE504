@@ -25,7 +25,6 @@ def def_use(stmts):
 # Part A, exercise 3
 # Assumptions:
 #  1) All variables are defined
-#  2) Variable names do not end with numbers (confirm with Prof if this is alright)
 def ssa(stmts):
     scratch_dict = dict()
     ssa_stmts = []
@@ -67,7 +66,8 @@ def ssa(stmts):
     return ssa_stmts
 
 #a = [1, 3, 5, 2, 4]
-a = [1, 2, 3, 5, 2, 4]
+#a = [1, 2, 3, 5, 2, 4]
+a = []
 res = dup(a) 
 print res
 #stmts = [ ["x", []], ["y", ["x"]], ["z", ["x", "y"]], ["x", ["z", "y"]] ]
