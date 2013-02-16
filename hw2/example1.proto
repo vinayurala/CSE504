@@ -1,0 +1,5 @@
+input(a)
+b = a + 5
+c = b + a * 6
+d = c / (a + 3)
+print(d)
