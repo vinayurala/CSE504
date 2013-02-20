@@ -1,5 +1,7 @@
-input(a)
-b = a + 5
-c = b + a * 6
-d = c / (a + 3)
-print(d)
+input(a);
+a = 1
+b = a + 5;
+c = b + 6;
+c = b + a;
+d = c / a;
+print(d);
