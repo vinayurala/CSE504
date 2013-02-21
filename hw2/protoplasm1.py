@@ -108,7 +108,7 @@ def assignStmt(node = None):
         rhs()
         expect(SEMI)
     else:
-        print "Unexpected symbol: " + str(token.type) + "in line: " + str(token.line_num) + ". Expecting either %s %s or an expression" % NAME  % NUMBER
+        print "Expecting a variable on LHS for assign statement @ line: " + str(token.line_num) + ", but found: " + token.type
         sys.exit(-1)
 
 def rhs(node = None):
