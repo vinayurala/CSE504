@@ -2,8 +2,20 @@ import cStringIO, tokenize
 import sys
 import re
 
-token = ""
+class Token:
+    def __init__(self, tok_type, tok_val, line_num):
+        self.value = tok_val
+        self.line_num = line_num
+        if(tok_val == "input"):
+            self.type = "INPUT"
+        elif (tok_val == "print"):
+            self.type = "PRINT"
+        else:
+            self.type = tok_type
+
+token = Token(None, None, None)
 token_list = []
+line_num = 1
 asts = []
 binop = ["+", "-", "*", "/", "%"]
 unop = ["-"]
@@ -27,16 +39,6 @@ NEWLINE         = "NEWLINE"
 INPUT           = "INPUT"
 PRINT           = "PRINT"
 
-class Token:
-    def __init__(self, tok_type, tok_val):
-        self.value = tok_val
-        if(tok_val == "input"):
-            self.type = "INPUT"
-        elif (tok_val == "print"):
-            self.type = "PRINT"
-        else:
-            self.type = tok_type
-
 class Node:
     def __init__(self, token = None):
         self.token = token
@@ -51,12 +53,12 @@ def getToken():
     global token_idx, token
     token_idx += 1
     try:
-        token = token_list[token_idx].type
+        token = token_list[token_idx]
     except IndexError:
-        token = "ENDMARKER"
+        token.type = "ENDMARKER"
 
 def found(tokType):
-    if(token == tokType):
+    if(token.type == tokType):
         getToken()
         return True
     return False
@@ -65,7 +67,7 @@ def expect(tok_type):
     if found(tok_type):
         return
     else:
-        print "Expected %s not found" % rev_op_map[tok_type]
+        print "Expected %s not found" + rev_op_map[tok_type] + " in line: " + token.line_num
         sys.exit(-1)
 
 def parse():
@@ -106,7 +108,7 @@ def assignStmt(node = None):
         rhs()
         expect(SEMI)
     else:
-        print "Unexpected symbol: " + str(token)
+        print "Unexpected symbol: " + str(token.type) + "in line: " + str(token.line_num) + ". Expecting either %s %s or an expression" % NAME  % NUMBER
         sys.exit(-1)
 
 def rhs(node = None):
@@ -134,10 +136,12 @@ def factor(node = None):
         pass
     elif(found(NAME)):
         pass
-    else:
-        expect(LPAR)
+    elif (found(LPAR)):
         ae()
         expect(RPAR)
+    else:
+        print "Unexpected symbol: \"" + rev_op_map[token.type] + "\" in line: " + str(token.line_num) + ". Expecting either a variable or number or an expression."
+        sys.exit(-1)
     
 
 def get_tokens(lines):
@@ -152,18 +156,19 @@ with open('example1.proto') as f:
 for line in lines:
     tokens = get_tokens(line)
     for t in tokens:
-        if (t[0] == 4 or t[0] == 0):
+        if (t[0] == 4):
+            line_num += 1
+            continue
+        elif (t[0] == 0):
             continue
         if(t[0] == 51):
             # print op_map[t[1]] + "\t" + str(t[1])
-            token_list.append(Token(op_map[t[1]], str(t[1])))
+            if(not t[1] in op_map):
+                print "Unexpected symbol \'" + str(t[1]) + "\' in line: " + str(line_num)
+                sys.exit(-1)
+            token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
         else:
             # print token_map[t[0]] + "\t" + str(t[1])
-            token_list.append(Token(token_map[t[0]], str(t[1])))
+            token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
 
 parse()
-
-
-
-
-
