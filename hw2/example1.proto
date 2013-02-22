@@ -1,6 +1,8 @@
 a = input();
-b = a + b;
+b = a + 5;
 c = b + 6;
-d = b + a;
+c = b + 2 * a;
+d = b + -a;
 d =              c /             a * 5;
+e = (a - 5) * d;
 print(d);

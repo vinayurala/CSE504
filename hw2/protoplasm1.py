@@ -16,7 +16,7 @@ class Token:
 token = Token(None, None, None)
 token_list = []
 line_num = 1
-asts = []
+level = 0
 binop = ["+", "-", "*", "/", "%"]
 unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
@@ -38,6 +38,8 @@ ENDMARKER       = "ENDMARKER"
 NEWLINE         = "NEWLINE"
 INPUT           = "INPUT"
 PRINT           = "PRINT"
+ZERO            = Token(None, "0", None)
+PLACEHOLDER     = Token(None, "PLACEHOLDER", None)
 
 class Node:
     def __init__(self, token = None):
@@ -45,9 +47,24 @@ class Node:
         self.level = 0
         self.children = []
 
-    def addNode(self, token):
+    def add(self, token):
+        self.addNode(Node(token))
+
+    def addNode(self, node):
         node.level = self.level + 1
         self.children.append(node)
+
+    def toString(self):
+        s = "   " * self.level
+        if self.token == None: s += "ROOT\n"
+        elif self.token.value == "PLACEHOLDER": s += "\n"
+        else:
+            s += self.token.value + "\n"
+            
+        for child in self.children:
+            s += child.toString()
+
+        return s
 
 def getToken():
     global token_idx, token
@@ -59,15 +76,17 @@ def getToken():
 
 def found(tokType):
     if(token.type == tokType):
-        getToken()
+        prev_token = token
+        #getToken()
         return True
     return False
 
-def expect(tok_type):
-    if found(tok_type):
+def consume(tok_type):
+    if token.type == tok_type:
+        getToken()
         return
     else:
-        print "Expected %s not found" + rev_op_map[tok_type] + " in line: " + token.line_num
+        print "Expected %s not found" % rev_op_map[tok_type] + " in line: " + str(token.line_num - 1)
         sys.exit(-1)
 
 def parse():
@@ -75,70 +94,118 @@ def parse():
     pgm()
     print "Program parsed successfully"
 
+    return ast
+
 def pgm():
     global ast
-
-    stmt()
+    node = Node()
+    
+    stmt(node)
     while not found(ENDMARKER):
-        stmt()
+        stmt(node)
 
-    expect(ENDMARKER)
+    consume(ENDMARKER)
 
-def stmt(node = None):
+    ast = node
+
+def stmt(node):
+
     if(found(PRINT)):
-        printStmt()
+        node.add(token)
+        consume(PRINT)
+        printStmt(node)
     else:
-        assignStmt()
+        assignStmt(node)
 
-def printStmt(node = None):
-    # stmtNode = Node(token)
-    expect(LPAR)
-    # node.addNode(stmtNode)
-    ae()
-    expect(RPAR)
-    expect(SEMI)
 
-def assignStmt(node = None):
-    # varNode = Node(token)
+def printStmt(node):
+    stmtNode = Node(token)
+    consume(LPAR)
+    node.addNode(stmtNode)
+    ae(stmtNode)
+    rparNode = Node(token)
+    node.addNode(rparNode)
+    consume(RPAR)
+    consume(SEMI)
+
+def assignStmt(node):
+    varNode = Node(token)
     if(found(NAME)):
-        # opNode = Node(token)
-        expect(EQUAL)
-        # node.addNode(opNode)
-        # opNode.addNode(varNode)
-        rhs()
-        expect(SEMI)
+        consume(NAME)
+        opNode = Node(token)
+        consume(EQUAL)
+        node.addNode(opNode)
+        opNode.addNode(varNode)
+        rhs(opNode)
+        consume(SEMI)
     else:
-        print "Expecting a variable on LHS for assign statement @ line: " + str(token.line_num) + ", but found: " + token.type
+        print "Unexpected symbol: \"" + str(token.value) + "\" in line: " + str(token.line_num) + ". Expecting a variable on LHS" 
         sys.exit(-1)
 
-def rhs(node = None):
+def rhs(node):
     if(found(INPUT)):
-        expect(LPAR)
-        expect(RPAR)
+        node.add(token)
+        consume(INPUT)
+        node.add(token)        
+        consume(LPAR)
+        node.add(token)
+        consume(RPAR)
     else:
-        ae()
+        ae(node)
 
+def ae(node):
+    term(node)
+    if(found(PLUS)):
+        opNode = Node(token)
+        node.addNode(opNode)
+        consume(PLUS)
+        ae(opNode)
+    elif found(MINUS):
+        opNode = Node(token)
+        node.addNode(opNode)
+        consume(MINUS)
+        ae(opNode)
 
-def ae(node = None):
-    term()
-    if(found(PLUS) or found(MINUS)):
-        ae()
+def term(node):
+    factor(node)
+    if found(MULT):
+        opNode = Node(token)
+        node.addNode(opNode)
+        consume(MULT)
+        term(opNode)
+    elif found(DIV):
+        opNode = Node(token)
+        node.addNode(opNode)
+        consume(DIV)
+        term(opNode)
+    elif found(MOD):
+        opNode = Node(token)
+        node.addNode(opNode)
+        consume(MOD)
+        term(opNode)
 
-def term(node = None):
-    factor()
-    if (found(MULT) or found(DIV) or found(MOD)):
-        term()
-
-def factor(node = None):
+def factor(node):
+    factorNode = Node(PLACEHOLDER)
+    node.addNode(factorNode)
     if(found(MINUS)):
-        factor()
+        unSubNode = Node(token)
+        factorNode.addNode(unSubNode)
+        consume(MINUS)
+        factor(unSubNode)
     elif(found(NUMBER)):
-        pass
+        node.add(token)
+        consume(NUMBER)
     elif(found(NAME)):
-        pass
+        factorNode.add(token)
+        consume(NAME)
     elif (found(LPAR)):
-        ae()
-        expect(RPAR)
+        lparNode = Node(token)
+        node.addNode(lparNode)
+        consume(LPAR)
+        ae(lparNode)
+        rparNode = Node(token)
+        node.addNode(rparNode)
+        consume(RPAR)
     else:
         print "Unexpected symbol: \"" + rev_op_map[token.type] + "\" in line: " + str(token.line_num) + ". Expecting either a variable or number or an expression."
         sys.exit(-1)
@@ -171,4 +238,7 @@ for line in lines:
             # print token_map[t[0]] + "\t" + str(t[1])
             token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
 
-parse()
+for t in token_list:
+    print t.type + "\t" + t.value
+ast = parse()
+print ast.toString()
