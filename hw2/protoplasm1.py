@@ -16,7 +16,7 @@ class Token:
 token = Token(None, None, None)
 token_list = []
 line_num = 1
-level = 0
+defined_var = []
 binop = ["+", "-", "*", "/", "%"]
 unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
@@ -65,6 +65,24 @@ class Node:
             s += child.toString()
 
         return s
+
+    def wellFormed(self):
+        if (self.token == None):
+            pass
+        elif (self.token.value == "PLACEHOLDER"):
+            pass
+        else:
+            if self.token.type == EQUAL:
+                defined_var.append(self.children[0].token.value)
+            elif self.token.type == NAME:
+                if not self.token.value in defined_var:
+                    print "Variable \"" + self.token.value + "\" used before its definition"
+                    sys.exit(-1)
+        
+        for child in self.children:
+            child.wellFormed()
+                    
+        return                    
 
 def getToken():
     global token_idx, token
@@ -237,8 +255,11 @@ for line in lines:
         else:
             # print token_map[t[0]] + "\t" + str(t[1])
             token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
-
+"""
 for t in token_list:
     print t.type + "\t" + t.value
+"""
 ast = parse()
-print ast.toString()
+
+ast.wellFormed()
+print "AST well formed"
