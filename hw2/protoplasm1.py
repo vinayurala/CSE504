@@ -232,23 +232,21 @@ def buildInterferenceGraph():
             if var:
                 varSet.add(var)
         
-    #for var in varSet:
-        #print var
     intGraph = dict.fromkeys(list(varSet))
     varList = list(varSet)
+    for var in varList:
+        print var
     for i1, i2 in itertools.combinations(varList, 2):
         tSet = set((i1, i2))
         for set1 in inSets:
             if (tSet.issubset(set1)):
                 if intGraph[i1] is None:
-                    intGraph[i1] = set(i2)
-                else:
-                    intGraph[i1].add(i2)                    
+                    intGraph[i1] = set()
+                intGraph[i1].add(i2)
                 if intGraph[i2] is None:
-                    intGraph[i2] = set(i1)
-                else:
-                    intGraph[i2].add(i1)
-
+                    intGraph[i2] = set()
+                intGraph[i2].add(i1)
+                    
     intGraph = dict((k, v) for k, v in intGraph.iteritems() 
                     if v != None)
 
@@ -409,7 +407,7 @@ def get_tokens(lines):
 
     return token_list        
 
-with open('example1.proto') as f:
+with open('example2.proto') as f:
     token_idx = -1
     lines = f.readlines()
 for line in lines:
@@ -463,10 +461,12 @@ for line in ic_lines:
 livenessAnalysis(reversed(ic_lines))
 inSets = inSets[::-1]
 outSets = outSets[::-1]
+"""
 print "In sets: "
 for inSet in inSets:
     print str(inSet)
 print "Out sets: "
 for outSet in outSets:
     print str(outSet)
+"""
 buildInterferenceGraph()    
