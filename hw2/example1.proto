@@ -1,6 +1,6 @@
 a = input();
-b = a + b;
-b = a + 5;
+b = a + 3;
+b = a * 2 + 5;
 c = b + 6;
 c = b + 2 * a;
 d = b + -a;

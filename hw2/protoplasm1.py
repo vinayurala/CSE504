@@ -17,11 +17,13 @@ token = Token(None, None, None)
 token_list = []
 line_num = 1
 defined_var = []
+expr_stacks = []
 binop = ["+", "-", "*", "/", "%"]
 unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
 op_map = {"+":"PLUS", "-":"MINUS", "*":"MULT", "/":"DIV", "%":"MOD", ";":"SEMI", "(": "LPAR", ")":"RPAR", "=": "ASSIGN"}
 rev_op_map = {"PLUS": "+", "MINUS": "-", "MULT": "*", "DIV": "/", "MOD":"%", "SEMI": ";", "LPAR": "(", "RPAR": ")", "ASSIGN": "="}
+in_code_op_map = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "mod", "=": ":="}
 
 NAME            = "NAME"
 NUMBER          = "NUMBER"
@@ -34,12 +36,13 @@ EQUAL           = "ASSIGN"
 SEMI            = "SEMI"
 LPAR            = "LPAR"
 RPAR            = "RPAR"
-ENDMARKER       = "ENDMARKER"
+EOF             = "EOF"
 NEWLINE         = "NEWLINE"
 INPUT           = "INPUT"
 PRINT           = "PRINT"
 ZERO            = Token(None, "0", None)
 PLACEHOLDER     = Token(None, "PLACEHOLDER", None)
+uMinusToken     = Token(None, "UMINUS", None)
 
 class Node:
     def __init__(self, token = None):
@@ -69,25 +72,115 @@ class Node:
     def wellFormed(self):
         global newly_defined_var
         iterable_list = self.children[:]
-        
+
         if (self.token == None):
             pass
         elif (self.token.value == "PLACEHOLDER"):
             pass
         else:
             if self.token.type == EQUAL:
-                defined_var.append(self.children[0].token.value)
-                newly_defined_var = self.children[0].token.value
+                lhs_var = self.children[0].token.value
+                if lhs_var in defined_var:
+                    pass
+                else:
+                    defined_var.append(lhs_var)
+                newly_defined_var = lhs_var
                 iterable_list = self.children[1:]
             elif self.token.type == NAME:
                 if not self.token.value in defined_var or self.token.value == newly_defined_var:
                     print "Variable \"" + self.token.value + "\" used before its definition"
                     sys.exit(-1)
-                    
+            elif self.token.type == SEMI:
+                newly_defined_var = None
+        
         for child in iterable_list:
             child.wellFormed()
-        
+                    
         return                    
+
+     
+    def __parseAST__(self):
+        if self.token == None or self.token.value == "PLACEHOLDER":
+            pass
+        else:
+            expr_stacks.append(self.token.value)
+
+        for child in reversed(self.children):
+            child.__parseAST__()
+        return 
+
+    def __getPostfix__(self, expr_stack):
+        postfix_exprs = []
+        temp_stack = []
+        for t in expr_stack:
+            if t == "(" or t == ")" or t == ";":
+                pass
+            elif t == "=":
+                temp_stack.append(t)
+                if "print" in temp_stack:
+                    postfix_exprs.append(temp_stack[::-1])
+                else:
+                    postfix_exprs.append(temp_stack[:])
+                del temp_stack[:]
+            else:
+                temp_stack.append(t)
+                
+        if "print" in temp_stack:
+            postfix_exprs.append(temp_stack[::-1])
+        else:
+            postfix_exprs.append(temp_stack[:])
+        return postfix_exprs
+
+
+    def gencode(self):
+        self.__parseAST__()
+        postfix_exprs = self.__getPostfix__(reversed(expr_stacks))
+        #for expr in postfix_exprs:
+            #print expr
+        temp_stack = []
+        ic_lines = []
+        line = str()
+        
+        tvar = "t"
+        idx = 0
+
+        for expr in postfix_exprs:
+            del temp_stack[:]
+            atom_expr = []
+            for t in expr:
+                line = str()                
+                if not t in ["+", "-", "*", "/", "%", "=", "UMINUS", "print"]:
+                    temp_stack.append(t)
+                else:
+                    if t == "=":
+                        t1 = temp_stack.pop()
+                        t2 = temp_stack.pop()
+                        line += t2 + " " + in_code_op_map[t] + " " + str(t1)
+                            
+                    elif t == "UMINUS":
+                        t1 = temp_stack.pop()
+                        line += tvar
+                        idx += 1
+                        line += str(idx) + " " + in_code_op_map["="] + " " + in_code_op_map["-"] + " 0, " + t1
+                        temp_stack.append(tvar + str(idx))
+
+                    elif t == "print":
+                        t1 = temp_stack.pop()
+                        line += t + " " + str(t1)
+
+                    else:
+                        t1 = temp_stack.pop()
+                        t2 = temp_stack.pop()
+                        line += in_code_op_map[t] + " " + tvar 
+                        idx += 1
+                        line += str(idx) + ", " + str(t2) + ", " + str(t1)
+                        temp_stack.append(tvar + str(idx))
+
+                    atom_expr.append(line)
+                    
+            ic_lines.append(atom_expr[:])
+                    
+        return ic_lines
 
 def getToken():
     global token_idx, token
@@ -95,7 +188,7 @@ def getToken():
     try:
         token = token_list[token_idx]
     except IndexError:
-        token.type = "ENDMARKER"
+        token.type = "EOF"
 
 def found(tokType):
     if(token.type == tokType):
@@ -115,7 +208,7 @@ def consume(tok_type):
 def parse():
     getToken()
     pgm()
-    # print "Program parsed successfully"
+    print "Program parsed successfully"
 
     return ast
 
@@ -124,10 +217,10 @@ def pgm():
     node = Node()
     
     stmt(node)
-    while not found(ENDMARKER):
+    while not found(EOF):
         stmt(node)
 
-    consume(ENDMARKER)
+    consume(EOF)
 
     ast = node
 
@@ -149,6 +242,7 @@ def printStmt(node):
     rparNode = Node(token)
     node.addNode(rparNode)
     consume(RPAR)
+    node.add(token)
     consume(SEMI)
 
 def assignStmt(node):
@@ -160,6 +254,7 @@ def assignStmt(node):
         node.addNode(opNode)
         opNode.addNode(varNode)
         rhs(opNode)
+        opNode.add(token)
         consume(SEMI)
     else:
         print "Unexpected symbol: \"" + str(token.value) + "\" in line: " + str(token.line_num) + ". Expecting a variable on LHS" 
@@ -211,12 +306,12 @@ def factor(node):
     factorNode = Node(PLACEHOLDER)
     node.addNode(factorNode)
     if(found(MINUS)):
-        unSubNode = Node(token)
+        unSubNode = Node(uMinusToken)
         factorNode.addNode(unSubNode)
         consume(MINUS)
         factor(unSubNode)
     elif(found(NUMBER)):
-        node.add(token)
+        factorNode.add(token)
         consume(NUMBER)
     elif(found(NAME)):
         factorNode.add(token)
@@ -260,11 +355,34 @@ for line in lines:
         else:
             # print token_map[t[0]] + "\t" + str(t[1])
             token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
+
 """
 for t in token_list:
     print t.type + "\t" + t.value
 """
 ast = parse()
-
+# print ast.toString()
 ast.wellFormed()
+
+#for var in defined_var:
+    #print var
+"""
+ast.test_parse()
+print "Expression Stack:"
+for t in reversed(expr_stacks):
+    print str(t)
+infix_expr = ast.getPostfix(reversed(expr_stacks))
+for expr in infix_expr:
+    print expr
+
+"""
+"""
+for var in defined_var:
+    print var
+"""
 print "AST well formed"
+print "Intermediate code: "
+ic_lines = ast.gencode()
+for line in ic_lines:
+    for expr in line:
+        print expr
