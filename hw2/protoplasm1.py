@@ -241,12 +241,16 @@ def buildInterferenceGraph():
         for set1 in inSets:
             if (tSet.issubset(set1)):
                 if intGraph[i1] is None:
-                    intGraph[i1] = i2
-                if intGraph[i2] is None:
-                    intGraph[i2] = i1
+                    intGraph[i1] = set(i2)
                 else:
-                    intGraph[i1].append(i2)
-                    intGraph[i2].append(i1)
+                    intGraph[i1].add(i2)                    
+                if intGraph[i2] is None:
+                    intGraph[i2] = set(i1)
+                else:
+                    intGraph[i2].add(i1)
+
+    intGraph = dict((k, v) for k, v in intGraph.iteritems() 
+                    if v != None)
 
     for key, value in intGraph.items():
         print str(key) + "\t" + str(intGraph[key])
