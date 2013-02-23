@@ -61,18 +61,6 @@ class Node:
         node.level = self.level + 1
         self.children.append(node)
 
-    def toString(self):
-        s = "   " * self.level
-        if self.token == None: s += "ROOT\n"
-        elif self.token.value == "PLACEHOLDER": s += "\n"
-        else:
-            s += self.token.value + "\n"
-            
-        for child in self.children:
-            s += child.toString()
-
-        return s
-
     def wellFormed(self):
         global newly_defined_var
         iterable_list = self.children[:]
@@ -139,8 +127,6 @@ class Node:
     def gencode(self):
         self.__parseAST__()
         postfix_exprs = self.__getPostfix__(reversed(expr_stacks))
-        #for expr in postfix_exprs:
-            #print expr
         temp_stack = []
         ic_lines = []
         line = str()
@@ -234,8 +220,6 @@ def buildInterferenceGraph():
         
     intGraph = dict.fromkeys(list(varSet))
     varList = list(varSet)
-    for var in varList:
-        print var
     for i1, i2 in itertools.combinations(varList, 2):
         tSet = set((i1, i2))
         for set1 in inSets:
@@ -249,10 +233,6 @@ def buildInterferenceGraph():
                     
     intGraph = dict((k, v) for k, v in intGraph.iteritems() 
                     if v != None)
-
-    for key, value in intGraph.items():
-        print str(key) + "\t" + str(intGraph[key])
-
                     
 def getToken():
     global token_idx, token
@@ -265,7 +245,6 @@ def getToken():
 def found(tokType):
     if(token.type == tokType):
         prev_token = token
-        #getToken()
         return True
     return False
 
@@ -407,7 +386,7 @@ def get_tokens(lines):
 
     return token_list        
 
-with open('example2.proto') as f:
+with open('example1.proto') as f:
     token_idx = -1
     lines = f.readlines()
 for line in lines:
@@ -419,39 +398,15 @@ for line in lines:
         elif (t[0] == 0):
             continue
         if(t[0] == 51):
-            # print op_map[t[1]] + "\t" + str(t[1])
             if(not t[1] in op_map):
                 print "Unexpected symbol \'" + str(t[1]) + "\' in line: " + str(line_num)
                 sys.exit(-1)
             token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
         else:
-            # print token_map[t[0]] + "\t" + str(t[1])
             token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
 
-"""
-for t in token_list:
-    print t.type + "\t" + t.value
-"""
 ast = parse()
-#print ast.toString()
 ast.wellFormed()
-
-#for var in defined_var:
-    #print var
-"""
-ast.__parseAST__()
-print "Expression Stack:"
-for t in reversed(expr_stacks):
-    print str(t)
-infix_expr = ast.getPostfix(reversed(expr_stacks))
-for expr in infix_expr:
-    print expr
-
-"""
-"""
-for var in defined_var:
-    print var
-"""
 print "AST well formed"
 print "Intermediate code: "
 ic_lines = ast.gencode()
@@ -461,12 +416,4 @@ for line in ic_lines:
 livenessAnalysis(reversed(ic_lines))
 inSets = inSets[::-1]
 outSets = outSets[::-1]
-"""
-print "In sets: "
-for inSet in inSets:
-    print str(inSet)
-print "Out sets: "
-for outSet in outSets:
-    print str(outSet)
-"""
 buildInterferenceGraph()    
