@@ -67,6 +67,9 @@ class Node:
         return s
 
     def wellFormed(self):
+        global newly_defined_var
+        iterable_list = self.children[:]
+        
         if (self.token == None):
             pass
         elif (self.token.value == "PLACEHOLDER"):
@@ -74,14 +77,16 @@ class Node:
         else:
             if self.token.type == EQUAL:
                 defined_var.append(self.children[0].token.value)
+                newly_defined_var = self.children[0].token.value
+                iterable_list = self.children[1:]
             elif self.token.type == NAME:
-                if not self.token.value in defined_var:
+                if not self.token.value in defined_var or self.token.value == newly_defined_var:
                     print "Variable \"" + self.token.value + "\" used before its definition"
                     sys.exit(-1)
-        
-        for child in self.children:
-            child.wellFormed()
                     
+        for child in iterable_list:
+            child.wellFormed()
+        
         return                    
 
 def getToken():
@@ -110,7 +115,7 @@ def consume(tok_type):
 def parse():
     getToken()
     pgm()
-    print "Program parsed successfully"
+    # print "Program parsed successfully"
 
     return ast
 
