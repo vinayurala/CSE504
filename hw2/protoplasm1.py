@@ -18,8 +18,6 @@ token_list = []
 line_num = 1
 defined_var = []
 expr_stacks = []
-binop = ["+", "-", "*", "/", "%"]
-unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
 op_map = {"+":"PLUS", "-":"MINUS", "*":"MULT", "/":"DIV", "%":"MOD", ";":"SEMI", "(": "LPAR", ")":"RPAR", "=": "ASSIGN"}
 rev_op_map = {"PLUS": "+", "MINUS": "-", "MULT": "*", "DIV": "/", "MOD":"%", "SEMI": ";", "LPAR": "(", "RPAR": ")", "ASSIGN": "="}
@@ -56,18 +54,6 @@ class Node:
     def addNode(self, node):
         node.level = self.level + 1
         self.children.append(node)
-
-    def toString(self):
-        s = "   " * self.level
-        if self.token == None: s += "ROOT\n"
-        elif self.token.value == "PLACEHOLDER": s += "\n"
-        else:
-            s += self.token.value + "\n"
-            
-        for child in self.children:
-            s += child.toString()
-
-        return s
 
     def wellFormed(self):
         global newly_defined_var
@@ -113,30 +99,28 @@ class Node:
         postfix_exprs = []
         temp_stack = []
         for t in expr_stack:
-            if t == "(" or t == ")" or t == ";":
+            if t == "(" or t == ")":
                 pass
+            elif t == ";":
+                if "print" in temp_stack:
+                    temp_stack.insert(len(temp_stack) - 1, temp_stack.pop(0))
+                    postfix_exprs.append(temp_stack[:])
+                    del temp_stack[:]
+                else:
+                    pass
             elif t == "=":
                 temp_stack.append(t)
-                if "print" in temp_stack:
-                    postfix_exprs.append(temp_stack[::-1])
-                else:
-                    postfix_exprs.append(temp_stack[:])
+                postfix_exprs.append(temp_stack[:])
                 del temp_stack[:]
             else:
                 temp_stack.append(t)
                 
-        if "print" in temp_stack:
-            postfix_exprs.append(temp_stack[::-1])
-        else:
-            postfix_exprs.append(temp_stack[:])
         return postfix_exprs
 
 
     def gencode(self):
         self.__parseAST__()
         postfix_exprs = self.__getPostfix__(reversed(expr_stacks))
-        #for expr in postfix_exprs:
-            #print expr
         temp_stack = []
         ic_lines = []
         line = str()
@@ -147,6 +131,7 @@ class Node:
         for expr in postfix_exprs:
             del temp_stack[:]
             atom_expr = []
+
             for t in expr:
                 line = str()                
                 if not t in ["+", "-", "*", "/", "%", "=", "UMINUS", "print"]:
@@ -193,7 +178,6 @@ def getToken():
 def found(tokType):
     if(token.type == tokType):
         prev_token = token
-        #getToken()
         return True
     return False
 
@@ -347,39 +331,15 @@ for line in lines:
         elif (t[0] == 0):
             continue
         if(t[0] == 51):
-            # print op_map[t[1]] + "\t" + str(t[1])
             if(not t[1] in op_map):
                 print "Unexpected symbol \'" + str(t[1]) + "\' in line: " + str(line_num)
                 sys.exit(-1)
             token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
         else:
-            # print token_map[t[0]] + "\t" + str(t[1])
             token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
 
-"""
-for t in token_list:
-    print t.type + "\t" + t.value
-"""
 ast = parse()
-# print ast.toString()
 ast.wellFormed()
-
-#for var in defined_var:
-    #print var
-"""
-ast.test_parse()
-print "Expression Stack:"
-for t in reversed(expr_stacks):
-    print str(t)
-infix_expr = ast.getPostfix(reversed(expr_stacks))
-for expr in infix_expr:
-    print expr
-
-"""
-"""
-for var in defined_var:
-    print var
-"""
 print "AST well formed"
 print "Intermediate code: "
 ic_lines = ast.gencode()
