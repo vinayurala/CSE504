@@ -18,6 +18,10 @@ token_list = []
 line_num = 1
 defined_var = []
 expr_stacks = []
+inSets = []
+outSets = []
+binop = ["+", "-", "*", "/", "%"]
+unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
 op_map = {"+":"PLUS", "-":"MINUS", "*":"MULT", "/":"DIV", "%":"MOD", ";":"SEMI", "(": "LPAR", ")":"RPAR", "=": "ASSIGN"}
 rev_op_map = {"PLUS": "+", "MINUS": "-", "MULT": "*", "DIV": "/", "MOD":"%", "SEMI": ";", "LPAR": "(", "RPAR": ")", "ASSIGN": "="}
@@ -54,6 +58,18 @@ class Node:
     def addNode(self, node):
         node.level = self.level + 1
         self.children.append(node)
+
+    def toString(self):
+        s = "   " * self.level
+        if self.token == None: s += "ROOT\n"
+        elif self.token.value == "PLACEHOLDER": s += "\n"
+        else:
+            s += self.token.value + "\n"
+            
+        for child in self.children:
+            s += child.toString()
+
+        return s
 
     def wellFormed(self):
         global newly_defined_var
@@ -121,6 +137,8 @@ class Node:
     def gencode(self):
         self.__parseAST__()
         postfix_exprs = self.__getPostfix__(reversed(expr_stacks))
+        #for expr in postfix_exprs:
+            #print expr
         temp_stack = []
         ic_lines = []
         line = str()
@@ -140,13 +158,13 @@ class Node:
                     if t == "=":
                         t1 = temp_stack.pop()
                         t2 = temp_stack.pop()
-                        line += t2 + " " + in_code_op_map[t] + " " + str(t1)
+                        line += t2 + " " + t + " " + str(t1)
                             
                     elif t == "UMINUS":
                         t1 = temp_stack.pop()
                         line += tvar
                         idx += 1
-                        line += str(idx) + " " + in_code_op_map["="] + " " + in_code_op_map["-"] + " 0, " + t1
+                        line += str(idx) + " = " + " 0 - " + t1
                         temp_stack.append(tvar + str(idx))
 
                     elif t == "print":
@@ -156,17 +174,55 @@ class Node:
                     else:
                         t1 = temp_stack.pop()
                         t2 = temp_stack.pop()
-                        line += in_code_op_map[t] + " " + tvar 
+                        line += tvar 
                         idx += 1
-                        line += str(idx) + ", " + str(t2) + ", " + str(t1)
+                        line += str(idx) + " = " + str(t2) + " " +  t + " " + str(t1)
                         temp_stack.append(tvar + str(idx))
 
                     atom_expr.append(line)
                     
-            ic_lines.append(atom_expr[:])
+            ic_lines.extend(atom_expr[:])
                     
         return ic_lines
 
+def livenessAnalysis(icLines):
+    useSet = set()
+    defSet = set()
+    inSet = set()
+    outSet = set()
+    succSet = set()
+    tSet = set()
+    rhsVars = []
+    tList = []
+
+    for line in icLines:
+        if not inSet:
+            pass
+        else:
+            outSet = inSet
+        useSet = set()
+        inSet = set()
+        tset = set()
+        if not "print" in line:
+            (lhs, rhs) = line.split('=', 2)
+            lhs = lhs.replace(" ", "")
+            defSet.add(lhs)
+            rhsVars = rhs.split()
+            for var in rhsVars:
+                if not var in ["+", "-", "*", "/", "%"] and not var.isdigit() and var != "input":
+                    var = var.replace(" ", "")
+                    useSet.add(var)
+        else:
+            tList = tokenize.generate_tokens(cStringIO.StringIO(line).readline)
+            for t in tList:
+                if t[0] == 1 and t[1] != "print":
+                    useSet.add(t[1])
+        
+        tSet = outSet.difference(defSet)
+        inSet = useSet.union(tSet)
+        inSets.append(inSet)
+        outSets.append(outSet)  
+                    
 def getToken():
     global token_idx, token
     token_idx += 1
@@ -178,6 +234,7 @@ def getToken():
 def found(tokType):
     if(token.type == tokType):
         prev_token = token
+        #getToken()
         return True
     return False
 
@@ -331,18 +388,50 @@ for line in lines:
         elif (t[0] == 0):
             continue
         if(t[0] == 51):
+            # print op_map[t[1]] + "\t" + str(t[1])
             if(not t[1] in op_map):
                 print "Unexpected symbol \'" + str(t[1]) + "\' in line: " + str(line_num)
                 sys.exit(-1)
             token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
         else:
+            # print token_map[t[0]] + "\t" + str(t[1])
             token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
 
+"""
+for t in token_list:
+    print t.type + "\t" + t.value
+"""
 ast = parse()
+#print ast.toString()
 ast.wellFormed()
+
+#for var in defined_var:
+    #print var
+"""
+ast.__parseAST__()
+print "Expression Stack:"
+for t in reversed(expr_stacks):
+    print str(t)
+infix_expr = ast.getPostfix(reversed(expr_stacks))
+for expr in infix_expr:
+    print expr
+
+"""
+"""
+for var in defined_var:
+    print var
+"""
 print "AST well formed"
 print "Intermediate code: "
 ic_lines = ast.gencode()
 for line in ic_lines:
-    for expr in line:
-        print expr
+    print line
+
+livenessAnalysis(reversed(ic_lines))
+print "In sets: "
+for inSet in reversed(inSets):
+    print str(inSet)
+print "Out sets: "
+for outSet in reversed(outSets):
+    print str(outSet)
+    
