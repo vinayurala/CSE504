@@ -1,6 +1,7 @@
 import cStringIO, tokenize
 import sys
 import re
+import itertools
 
 class Token:
     def __init__(self, tok_type, tok_val, line_num):
@@ -20,6 +21,7 @@ defined_var = []
 expr_stacks = []
 inSets = []
 outSets = []
+intGraph = dict()
 binop = ["+", "-", "*", "/", "%"]
 unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
@@ -190,8 +192,6 @@ def livenessAnalysis(icLines):
     defSet = set()
     inSet = set()
     outSet = set()
-    succSet = set()
-    tSet = set()
     rhsVars = []
     tList = []
 
@@ -202,7 +202,6 @@ def livenessAnalysis(icLines):
             outSet = inSet
         useSet = set()
         inSet = set()
-        tset = set()
         if not "print" in line:
             (lhs, rhs) = line.split('=', 2)
             lhs = lhs.replace(" ", "")
@@ -218,10 +217,39 @@ def livenessAnalysis(icLines):
                 if t[0] == 1 and t[1] != "print":
                     useSet.add(t[1])
         
-        tSet = outSet.difference(defSet)
-        inSet = useSet.union(tSet)
+        inSet = useSet.union(outSet.difference(defSet))
         inSets.append(inSet)
         outSets.append(outSet)  
+        
+def buildInterferenceGraph():
+    varSet = set()
+    for inSet in inSets:
+        for var in inSet:
+            if var:
+                varSet.add(var)
+    for outSet in outSets:
+        for var in inSet:
+            if var:
+                varSet.add(var)
+        
+    #for var in varSet:
+        #print var
+    intGraph = dict.fromkeys(list(varSet))
+    varList = list(varSet)
+    for i1, i2 in itertools.combinations(varList, 2):
+        for set1, set2 in zip(inSets, outSets):
+            if ((i1 in set1 and i2 in set1) or (i1 in set2 and i2 in set2)):
+                if intGraph[i1] is None:
+                    intGraph[i1] = i2
+                elif intGraph[i2] is None:
+                    intGraph[i2] = i1
+                else:
+                    intGraph.update(dict(i1 = i2))
+                    intGraph.update(dict(i2 = i1))
+
+    for key, value in intGraph.items():
+        print str(key) + "\t" + str(intGraph[key])
+
                     
 def getToken():
     global token_idx, token
@@ -428,10 +456,12 @@ for line in ic_lines:
     print line
 
 livenessAnalysis(reversed(ic_lines))
+inSets = inSets[::-1]
+outSets = outSets[::-1]
 print "In sets: "
-for inSet in reversed(inSets):
+for inSet in inSets:
     print str(inSet)
 print "Out sets: "
-for outSet in reversed(outSets):
+for outSet in outSets:
     print str(outSet)
-    
+buildInterferenceGraph()    
