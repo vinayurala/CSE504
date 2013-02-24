@@ -253,7 +253,7 @@ def consume(tok_type):
         getToken()
         return
     else:
-        print "Expected %s not found" % rev_op_map[tok_type] + " in line: " + str(token.line_num - 1)
+        print "Expected %s not found" % rev_op_map[tok_type] + " in line: " + str(token.line_num)
         sys.exit(-1)
 
 def parse():
@@ -391,6 +391,24 @@ with open('example1.proto') as f:
     lines = f.readlines()
 for line in lines:
     tokens = get_tokens(line)
+    try:
+        for t in tokens:
+            if (t[0] == 4):
+                line_num += 1
+                continue
+            elif (t[0] == 0):
+                continue
+            if(t[0] == 51):
+                if(not t[1] in op_map):
+                    print "Unexpected symbol \'" + str(t[1]) + "\' in line: " + str(line_num)
+                    sys.exit(-1)
+                token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
+            else:
+                token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
+    except:
+        print "Error while tokenizing the program. Possibly because of a missing open/close paranthesis in line: " + str(line_num - 1)
+        sys.exit(-1)
+"""
     for t in tokens:
         if (t[0] == 4):
             line_num += 1
@@ -404,7 +422,7 @@ for line in lines:
             token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
         else:
             token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
-
+"""
 ast = parse()
 ast.wellFormed()
 print "AST well formed"
