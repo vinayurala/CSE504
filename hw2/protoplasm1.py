@@ -188,6 +188,7 @@ def livenessAnalysis(icLines):
             outSet = inSet
         useSet = set()
         inSet = set()
+        defSet = set()
         if not "print" in line:
             (lhs, rhs) = line.split('=', 2)
             lhs = lhs.replace(" ", "")
