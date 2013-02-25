@@ -2,6 +2,7 @@ import cStringIO, tokenize
 import sys
 import re
 import itertools
+import random
 
 class Token:
     def __init__(self, tok_type, tok_val, line_num):
@@ -218,7 +219,8 @@ def buildInterferenceGraph():
         for var in inSet:
             if var:
                 varSet.add(var)
-        
+    
+    varSet = varSet.union(set(defined_var))
     intGraph = dict.fromkeys(list(varSet))
     varList = list(varSet)
     for i1, i2 in itertools.combinations(varList, 2):
@@ -231,9 +233,66 @@ def buildInterferenceGraph():
                 if intGraph[i2] is None:
                     intGraph[i2] = set()
                 intGraph[i2].add(i1)
-                    
-    intGraph = dict((k, v) for k, v in intGraph.iteritems() 
-                    if v != None)
+
+    print ""
+    return intGraph
+
+def graphColoring():
+    tStack = list()
+    coloredList = []
+    coloredList = dict.fromkeys(intGraph.keys())
+    spilledList = []
+    #for k in intGraph.keys():
+        #coloredList.append((k, None))
+    while (not all(intGraph[k] is None for k in intGraph)):
+        nextKey = None
+        flag = 1
+        for keys in intGraph:
+            if intGraph[keys] is None:
+                continue
+            if not flag:
+                break
+            if (len(intGraph[keys]) < 10):
+                nextKey = keys
+                flag = 0
+        if(flag):
+            nextKey = max(intGraph, key=lambda k:len(intGraph[k]))
+            
+        edges = (nextKey, intGraph[nextKey])
+        del intGraph[nextKey]
+        tStack.append(edges)
+        
+    while tStack:
+        (v, E) = tStack.pop()
+        intGraph[v] = E
+        colorV = 0
+        flag = 1
+        neighborColors = list()
+        for e in E:
+            neighborColors.append(coloredList[e])
+        while(flag and colorV < 10):
+            if colorV in neighborColors:
+                colorV += 1
+            else:
+                flag = 0
+
+        if(flag):
+            spilledList.append(v)
+            #sys.exit(-1)
+        else:
+            coloredList[v] = colorV
+
+    print "Register Allocation: "
+    for keys in coloredList:
+        if ((coloredList[keys] == None) and (not keys in spilledList)):
+            coloredList[keys] = random.randint(0, 9)
+        if not coloredList[keys] is None:
+            print str(keys) + "\t" + str(coloredList[keys])
+    
+    print "Spilled List: "
+    for keys in spilledList:
+        print str(keys)
+    return (coloredList, spilledList)
                     
 def getToken():
     global token_idx, token
@@ -421,4 +480,5 @@ for line in ic_lines:
 livenessAnalysis(reversed(ic_lines))
 inSets = inSets[::-1]
 outSets = outSets[::-1]
-buildInterferenceGraph()    
+intGraph = buildInterferenceGraph()    
+graphColoring()
