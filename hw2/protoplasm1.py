@@ -2,6 +2,7 @@ import cStringIO, tokenize
 import sys
 import itertools
 import random
+import re
 
 class Token:
     def __init__(self, tok_type, tok_val, line_num):
@@ -23,6 +24,7 @@ inSets = []
 outSets = []
 reTryCount = 0
 ic_lines = list()
+originalICLines = list()
 intGraph = dict()
 tempIdx = 0
 binop = ["+", "-", "*", "/", "%"]
@@ -251,15 +253,20 @@ def buildInterferenceGraph():
 
 
 def modifyIC(lines, var, tempIdx):
+    
     words = [w.find(var) for w in lines]
     tempIdx += 1
     tVar = "t" + str(tempIdx)
-    storeVar = "store " + str(var) + "\n"
-    loadVar = str(tVar)+ " = load " + str(var) + "\n"
+    storeVar = "store " + str(var)
+    loadVar = str(tVar)+ " = load " + str(var)
     
     for w in words:
         if w > -1:
             idx = words.index(w)
+            reVar = "\\b" + var + "\\b"
+            exactMatches = re.findall(reVar, lines[idx])
+            if not exactMatches:
+                continue
             words.insert(words.index(w) + 1, -1)
             string = lines[idx]
             if("=" in string):
@@ -280,6 +287,11 @@ def modifyIC(lines, var, tempIdx):
                 else:
                     lines.insert(idx + 1, storeVar)
 
+    """
+    print "Modified IC: "
+    for line in lines:
+        print line
+    """
     return lines
 
 def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
@@ -346,21 +358,23 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
     while spilledList:        
         if(reTryCount < 2):
             var = str(spilledList.pop())
-            ic_lines = modifyIC(ic_lines, var, tempIdx)
+            tLines = list()
+            tLines = originalICLines[:]
+            ic_lines = modifyIC(tLines, var, tempIdx)
             
             livenessAnalysis(reversed(ic_lines))
             inSets = inSets[::-1]
             outSets = outSets[::-1]
 
             intGraph = buildInterferenceGraph()    
-            graphColoring(intGraph, reTryCount + 1, ic_lines, inSets, outSets, tempIdx)
-            return (coloredList, spilledList)
+            (coloredList, spilledList, icLines) = graphColoring(intGraph, reTryCount + 1, ic_lines, inSets, outSets, tempIdx)
+            return (coloredList, spilledList, ic_lines)
         
         else:
-            return (coloredList, spilledList)
+            return (coloredList, spilledList, ic_lines)
 
     print ""
-    return (coloredList, spilledList)
+    return (coloredList, spilledList, ic_lines)
                     
 def getToken():
     global token_idx, token
@@ -373,7 +387,6 @@ def getToken():
 def found(tokType):
     if(token.type == tokType):
         prev_token = token
-        #getToken()
         return True
     return False
 
@@ -515,7 +528,7 @@ def get_tokens(lines):
     return token_list        
 
 
-with open('example3.proto') as f:
+with open('example1.proto') as f:
     token_idx = -1
     lines = f.readlines()
 for line in lines:
@@ -545,8 +558,16 @@ ast.wellFormed()
 print "AST well formed"
 print "Intermediate code: "
 ic_lines = ast.gencode()
+originalICLines = ic_lines[:]
 livenessAnalysis(reversed(ic_lines))
 inSets = inSets[::-1]
 outSets = outSets[::-1]
 intGraph = buildInterferenceGraph()    
-graphColoring(intGraph, 1, ic_lines, inSets, outSets, tempIdx)
+(coloredList, spilledList, ic_lines) = graphColoring(intGraph, 1, ic_lines, inSets, outSets, tempIdx)
+tLines = list()
+tLines = originalICLines[:]
+for var in spilledList:
+    ic_lines = modifyIC(tLines, var, tempIdx)
+print "Final IC"
+for line in ic_lines:
+    print line
