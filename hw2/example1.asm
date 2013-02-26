@@ -1,42 +1,37 @@
 .data
-	space:	.asciiz "\n"
+space:	.asciiz "\n"
 .text 
  main:
-li $v0, 5
-syscall
-move $t0, $v0
-add $t5, $t0, 2
-move $t4, $t5
-add $t4, $t4, $t0
-move $t5, $t4
-neg $t7, $t0
-add $t3, $t7, 2
-move $t2, $t3
-li $s8, 2
-div $t0, $s8
-mfhi $t9
-move $t3, $t9
-li $s8, 2
-div $t0, $s8
-mflo $t8
-move $t6, $t8
-add $t1, $t3, 1
-move $t1, $t1
-mul $t0, $t0, 4
-sub $t2, $t0, $t2
-move $a0 $t2
-li $v0, 1
-syscall
-addi $v0, $zero, 4
-la $a0, space
-syscall
+li $s0, 2
+neg $t1, $s0
+add $t2, $t1, 3
+mul $t0, $t2, 5
+move $t1, $t0
+sub $t3, $t1, 2
+move $t0, $t3
+li $t9 3
+li $t2 4
+add $t5, $t9, $t2
+move $t3, $t5
+mul $t4, $t3, 2
+move $t8, $t4
+add $t7, $t3, $t8
+sub $t6, $t2, $t7
+add $t2, $t9, $t6
+move $t9, $t2
 move $a0 $t1
 li $v0, 1
 syscall
 addi $v0, $zero, 4
 la $a0, space
 syscall
-move $a0 $t6
+move $a0 $t0
+li $v0, 1
+syscall
+addi $v0, $zero, 4
+la $a0, space
+syscall
+move $a0 $t9
 li $v0, 1
 syscall
 addi $v0, $zero, 4

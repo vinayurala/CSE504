@@ -31,7 +31,7 @@ token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"I
 op_map = {"+":"PLUS", "-":"MINUS", "*":"MULT", "/":"DIV", "%":"MOD", ";":"SEMI", "(": "LPAR", ")":"RPAR", "=": "ASSIGN"}
 rev_op_map = {"PLUS": "+", "MINUS": "-", "MULT": "*", "DIV": "/", "MOD":"%", "SEMI": ";", "LPAR": "(", "RPAR": ")", "ASSIGN": "="}
 mipsCodeMap = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "div", "=": ":=", "neg": "neg"}
-mipsTemplate = {"input": "li $v0, 5\nsyscall\n", "print": "li $v0, 1\nsyscall\n", "exit":"li $v0, 10\nsyscall\n", "space": ".data\n\tspace:\t.asciiz \"\\n\"", "printLn": "addi $v0, $zero, 4\nla $a0, space\nsyscall\n"}
+mipsTemplate = {"input": "li $v0, 5\nsyscall\n", "print": "li $v0, 1\nsyscall\n", "exit":"li $v0, 10\nsyscall\n", "space": ".data\nspace:\t.asciiz \"\\n\"", "printLn": "addi $v0, $zero, 4\nla $a0, space\nsyscall\n"}
 registerMap = dict.fromkeys(range(10))
 
 NAME            = "NAME"
@@ -333,7 +333,6 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
 
         if(flag):
             spilledList.append(v)
-            #sys.exit(-1)
         else:
             coloredList[v] = colorV
             colorV = (colorV + 1) % 10
@@ -443,7 +442,7 @@ def genMIPSCode(lines, spilledList, coloredList):
                     elif tList[0].isdigit():
                         tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[2]]] + ", " + str(tList[0]) + "\n"
                     else:
-                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[2]]] + ", " + registerMap[coloredList[tList[0]]] + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[0]]] + ", " + registerMap[coloredList[tList[2]]] + "\n"
                     
             elif (tList[0] == "neg"):
                 if tList[1].isdigit():
@@ -478,7 +477,7 @@ def genMIPSCode(lines, spilledList, coloredList):
 
     mipsLines.append(mipsTemplate["exit"])
     if spilledVars:
-        scratchText = str("\t\t.data\n")
+        scratchText = str(".data\n")
         mipsLines.append(scratchText)
         scratchText = str()
         for var in spilledVars:
@@ -645,7 +644,7 @@ def get_tokens(lines):
     return token_list        
 
 
-with open('example1.proto') as f:
+with open('example3.proto') as f:
     token_idx = -1
     lines = f.readlines()
 for line in lines:

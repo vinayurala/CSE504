@@ -1,0 +1,5 @@
+a = 4;
+c = 3;
+b = a + 1 + c;
+abc = input();
+print(b+c);
