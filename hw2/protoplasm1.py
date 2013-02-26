@@ -1,6 +1,5 @@
 import cStringIO, tokenize
 import sys
-import re
 import itertools
 import random
 
@@ -22,7 +21,10 @@ defined_var = []
 expr_stacks = []
 inSets = []
 outSets = []
+reTryCount = 0
+ic_lines = list()
 intGraph = dict()
+tempIdx = 0
 binop = ["+", "-", "*", "/", "%"]
 unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
@@ -81,7 +83,7 @@ class Node:
                 iterable_list = self.children[1:]
             elif self.token.type == NAME:
                 if not self.token.value in defined_var or self.token.value == newly_defined_var:
-                    print "Variable \"" + self.token.value + "\" used before its definition"
+                    print "ERROR: Variable \"" + self.token.value + "\" used before its definition"
                     sys.exit(-1)
             elif self.token.type == SEMI:
                 newly_defined_var = None
@@ -133,7 +135,8 @@ class Node:
         line = str()
         
         tvar = "t"
-        idx = 0
+        global tempIdx
+        tempIdx = 1
 
         for expr in postfix_exprs:
             del temp_stack[:]
@@ -152,9 +155,9 @@ class Node:
                     elif t == "UMINUS":
                         t1 = temp_stack.pop()
                         line += tvar
-                        idx += 1
-                        line += str(idx) + " = " + " 0 - " + t1
-                        temp_stack.append(tvar + str(idx))
+                        tempIdx += 1
+                        line += str(tempIdx) + " = " + " 0 - " + t1
+                        temp_stack.append(tvar + str(tempIdx))
 
                     elif t == "print":
                         t1 = temp_stack.pop()
@@ -164,9 +167,9 @@ class Node:
                         t1 = temp_stack.pop()
                         t2 = temp_stack.pop()
                         line += tvar 
-                        idx += 1
-                        line += str(idx) + " = " + str(t2) + " " +  t + " " + str(t1)
-                        temp_stack.append(tvar + str(idx))
+                        tempIdx += 1
+                        line += str(tempIdx) + " = " + str(t2) + " " +  t + " " + str(t1)
+                        temp_stack.append(tvar + str(tempIdx))
 
                     atom_expr.append(line)
                     
@@ -190,7 +193,14 @@ def livenessAnalysis(icLines):
         useSet = set()
         inSet = set()
         defSet = set()
-        if not "print" in line:
+        if "store" in line or "load" in line:
+            if "load" in line:
+                (lhs, _) = line.split('=', 2)
+                lhs = lhs.replace(" ", "")
+                defSet.add(lhs)
+            else:
+                continue
+        elif not "print" in line:
             (lhs, rhs) = line.split('=', 2)
             lhs = lhs.replace(" ", "")
             defSet.add(lhs)
@@ -210,40 +220,73 @@ def livenessAnalysis(icLines):
         outSets.append(outSet)  
         
 def buildInterferenceGraph():
+    graph = dict()
     varSet = set()
     for inSet in inSets:
         for var in inSet:
             if var:
                 varSet.add(var)
     for outSet in outSets:
-        for var in inSet:
+        for var in outSet:
             if var:
                 varSet.add(var)
     
     varSet = varSet.union(set(defined_var))
-    intGraph = dict.fromkeys(list(varSet))
+    graph = dict.fromkeys(list(varSet))
     varList = list(varSet)
     for i1, i2 in itertools.combinations(varList, 2):
         tSet = set((i1, i2))
         for set1 in inSets:
             if (tSet.issubset(set1)):
-                if intGraph[i1] is None:
-                    intGraph[i1] = set()
-                intGraph[i1].add(i2)
-                if intGraph[i2] is None:
-                    intGraph[i2] = set()
-                intGraph[i2].add(i1)
+                if graph[i1] is None:
+                    graph[i1] = set()
+                graph[i1].add(i2)
+                if graph[i2] is None:
+                    graph[i2] = set()
+                graph[i2].add(i1)
 
+                    
     print ""
-    return intGraph
+    return graph
 
-def graphColoring():
+
+def modifyIC(lines, var, tempIdx):
+    words = [w.find(var) for w in lines]
+    tempIdx += 1
+    tVar = "t" + str(tempIdx)
+    storeVar = "store " + str(var) + "\n"
+    loadVar = str(tVar)+ " = load " + str(var) + "\n"
+    
+    for w in words:
+        if w > -1:
+            idx = words.index(w)
+            words.insert(words.index(w) + 1, -1)
+            string = lines[idx]
+            if("=" in string):
+                if(string.find(var) > string.find("=")):
+                    lines.insert(idx, loadVar)
+                    string = lines[idx + 1].replace(var, tVar)
+                    del lines[idx + 1]
+                    lines.insert(idx+1, string)
+                else:
+                    lines.insert(idx + 1, storeVar)
+            else:
+                if ("print" in string):
+                    lines.insert(idx, loadVar)
+                    string = lines[idx + 1].replace(var, tVar)
+                    del lines[idx + 1]
+                    lines.insert(idx+1, string)
+                
+                else:
+                    lines.insert(idx + 1, storeVar)
+
+    return lines
+
+def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
     tStack = list()
     coloredList = []
     coloredList = dict.fromkeys(intGraph.keys())
     spilledList = []
-    #for k in intGraph.keys():
-        #coloredList.append((k, None))
     while (not all(intGraph[k] is None for k in intGraph)):
         nextKey = None
         flag = 1
@@ -255,8 +298,13 @@ def graphColoring():
             if (len(intGraph[keys]) < 10):
                 nextKey = keys
                 flag = 0
+
         if(flag):
-            nextKey = max(intGraph, key=lambda k:len(intGraph[k]))
+            nextKey = ""
+            for k in intGraph:
+                if not intGraph[k] is None:
+                    if len(intGraph[k]) > len(nextKey):
+                        nextKey = k
             
         edges = (nextKey, intGraph[nextKey])
         del intGraph[nextKey]
@@ -270,7 +318,7 @@ def graphColoring():
         neighborColors = list()
         for e in E:
             neighborColors.append(coloredList[e])
-        while(flag and colorV < 10):
+        while(flag and colorV < 3):
             if colorV in neighborColors:
                 colorV += 1
             else:
@@ -278,20 +326,40 @@ def graphColoring():
 
         if(flag):
             spilledList.append(v)
-            #sys.exit(-1)
         else:
             coloredList[v] = colorV
 
-    print "Register Allocation: "
+    colorV = 0
+    print "Register Allocation (Try #): " + str(reTryCount)
     for keys in coloredList:
         if ((coloredList[keys] == None) and (not keys in spilledList)):
-            coloredList[keys] = random.randint(0, 9)
+            coloredList[keys] = colorV % 10
+            colorV += 1
         if not coloredList[keys] is None:
             print str(keys) + "\t" + str(coloredList[keys])
     
     print "Spilled List: "
     for keys in spilledList:
         print str(keys)
+
+    print ""
+    while spilledList:        
+        if(reTryCount < 2):
+            var = str(spilledList.pop())
+            ic_lines = modifyIC(ic_lines, var, tempIdx)
+            
+            livenessAnalysis(reversed(ic_lines))
+            inSets = inSets[::-1]
+            outSets = outSets[::-1]
+
+            intGraph = buildInterferenceGraph()    
+            graphColoring(intGraph, reTryCount + 1, ic_lines, inSets, outSets, tempIdx)
+            return (coloredList, spilledList)
+        
+        else:
+            return (coloredList, spilledList)
+
+    print ""
     return (coloredList, spilledList)
                     
 def getToken():
@@ -305,6 +373,7 @@ def getToken():
 def found(tokType):
     if(token.type == tokType):
         prev_token = token
+        #getToken()
         return True
     return False
 
@@ -313,13 +382,12 @@ def consume(tok_type):
         getToken()
         return
     else:
-        print "Expected %s not found" % rev_op_map[tok_type] + " in line: " + str(token.line_num)
+        print "ERROR: Expected %s not found" % rev_op_map[tok_type] + " in line: " + str(token.line_num - 1)
         sys.exit(-1)
 
 def parse():
     getToken()
     pgm()
-    print "Program parsed successfully"
 
     return ast
 
@@ -368,7 +436,7 @@ def assignStmt(node):
         opNode.add(token)
         consume(SEMI)
     else:
-        print "Unexpected symbol: \"" + str(token.value) + "\" in line: " + str(token.line_num) + ". Expecting a variable on LHS" 
+        print "ERROR: Unexpected symbol: \"" + str(token.value) + "\" in line: " + str(token.line_num) + ". Expecting a variable on LHS" 
         sys.exit(-1)
 
 def rhs(node):
@@ -436,17 +504,18 @@ def factor(node):
         node.addNode(rparNode)
         consume(RPAR)
     else:
-        print "Unexpected symbol: \"" + rev_op_map[token.type] + "\" in line: " + str(token.line_num) + ". Expecting either a variable or number or an expression."
+        print "ERROR: Unexpected symbol: \"" + rev_op_map[token.type] + "\" in line: " + str(token.line_num) + ". Expecting either a variable or number or an expression."
         sys.exit(-1)
     
 
 def get_tokens(lines):
     token_list = []
     token_list = tokenize.generate_tokens(cStringIO.StringIO(lines).readline)
-
+        
     return token_list        
 
-with open('example1.proto') as f:
+
+with open('example3.proto') as f:
     token_idx = -1
     lines = f.readlines()
 for line in lines:
@@ -466,19 +535,18 @@ for line in lines:
             else:
                 token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
     except:
-        print "Error while tokenizing the program. Possibly because of a missing open/close paranthesis in line: " + str(line_num - 1)
+        print "ERROR: Probably because of a missing parantheses in line: " + str(line_num)
         sys.exit(-1)
 
 ast = parse()
+
 ast.wellFormed()
+
 print "AST well formed"
 print "Intermediate code: "
 ic_lines = ast.gencode()
-for line in ic_lines:
-    print line
-
 livenessAnalysis(reversed(ic_lines))
 inSets = inSets[::-1]
 outSets = outSets[::-1]
 intGraph = buildInterferenceGraph()    
-graphColoring()
+graphColoring(intGraph, 1, ic_lines, inSets, outSets, tempIdx)
