@@ -160,7 +160,7 @@ class Node:
                         t1 = temp_stack.pop()
                         line += tvar
                         tempIdx += 1
-                        line += str(tempIdx) + " = " + " 0 - " + t1
+                        line += str(tempIdx) + " = " + "neg " + t1
                         temp_stack.append(tvar + str(tempIdx))
 
                     elif t == "print":
@@ -297,7 +297,7 @@ def modifyIC(lines, var, tempIdx):
     """
     return (lines, tempIdx)
 
-def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
+def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, lastRun):
     tStack = list()
     coloredList = []
     coloredList = dict.fromkeys(intGraph.keys())
@@ -333,7 +333,7 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
         neighborColors = list()
         for e in E:
             neighborColors.append(coloredList[e])
-        while(flag and colorV < 3):
+        while(flag and colorV < 10):
             if colorV in neighborColors:
                 colorV += 1
             else:
@@ -345,17 +345,13 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
             coloredList[v] = colorV
 
     colorV = 0
-    print "Register Allocation (Try #): " + str(reTryCount)
     for keys in coloredList:
         if ((coloredList[keys] == None) and (not keys in spilledList)):
             coloredList[keys] = colorV % 10
             colorV += 1
-        if not coloredList[keys] is None:
-            print str(keys) + "\t" + str(coloredList[keys])
     
-    print "Spilled List: "
-    for keys in spilledList:
-        print str(keys)
+    if(lastRun):
+        return (coloredList, spilledList, ic_lines)
 
     print ""
     while spilledList:        
@@ -370,32 +366,145 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
             outSets = outSets[::-1]
 
             intGraph = buildInterferenceGraph()    
-            (coloredList, spilledList, icLines) = graphColoring(intGraph, reTryCount + 1, ic_lines, inSets, outSets, tempIdx)
+            (coloredList, spilledList, icLines) = graphColoring(intGraph, reTryCount + 1, ic_lines, inSets, outSets, tempIdx, 0)
             return (coloredList, spilledList, ic_lines)
         
         else:
+            (coloredList, spilledList, icLines) = graphColoring(intGraph, reTryCount + 1, ic_lines, inSets, outSets, tempIdx, 1)
             return (coloredList, spilledList, ic_lines)
 
     print ""
     return (coloredList, spilledList, ic_lines)
                     
-def genMIPSCode(lines):
-    f = open("example1.asm", "w")
-    regVar = "r"
+def genMIPSCode(lines, spilledList, coloredList):
+    regVar = "t"
     regIdx = 0
     for k in registerMap:
-        registerMap[k] = regVar + str(regIdx)
+        registerMap[k] = "$" + regVar + str(regIdx)
         regIdx += 1
     mipsLines = list()
+    spilledVars = dict.fromkeys(spilledList)
+    tIdx = 1
+    for var in spilledVars:
+        tVar = "var" + str(tIdx)
+        tIdx += 1
+        spilledVars[var] = tVar
     tStr = str()
+
+    opList = ["+", "-", "*", "/", "%"]
+    scratchText = "\t\t.text \n main:\n"
+    mipsLines.append(scratchText)
+
     for line in lines:
+        tStr = str()
         if "=" in line:
             (lhs, rhs) = line.split('=', 2)
-            rhs.replace(" ", "")
-            if len(rhs) == 1:
-                tStr = "move "
+            tokens = tokenize.generate_tokens(cStringIO.StringIO(rhs).readline)            
+            tList = list()
+            for t in tokens:
+                if t[1] != "" and t[1] != " ":
+                    tList.append(t[1])
+            lhs = lhs.replace(" ", "")
+            if len(tList) == 1:
+                if tList[0].isdigit():
+                    if coloredList[lhs] == None:
+                        tStr += "li $s1, " + str(tList[0]) + "\n"
+                    else:
+                        tStr += "li " + registerMap[coloredList[lhs]] + " " + str(tList[0]) + "\n"
+                else:
+                    if coloredList[lhs] == None:
+                        tStr += "move $s1, " + registerMap[coloredList[tList[0]]] + "\n"
+                    else:
+                        tStr = "move " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[0]]] + "\n"
+
+            if (any (op in rhs for op in opList)):
+                if "%" in rhs:
+                    if tList[0].isdigit() and tList[2].isdigit():
+                        tStr += "li $s0, " + str(tList[0]) + "\n"
+                        tStr += "li $s1, " + str(tList[2]) + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + "$s0, $s1\n"
+                        
+                    elif tList[2].isdigit():
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[0]]] + ", " + str(tList[2]) + "\n"
+                    elif tList[0].isdigit():
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + str(tList[0]) + "\n"
+                    else:
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + registerMap[coloredList[tList[0]]]
+                    tStr += "mfhi " + registerMap[coloredList[lhs]] + "\n"
+                elif tList[1] == "/":
+                    if tList[0].isdigit() and tList[2].isdigit():
+                        tStr += "li $s0, " + str(tList[0]) + "\n"
+                        tStr += "li $s1, " + str(tList[2]) + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + "$s0, $s1\n"
+ 
+                    elif tList[2].isdigit():
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[0]]] + ", " + str(tList[2]) + "\n"
+                    elif tList[0].isdigit():
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + str(tList[0]) + "\n"                        
+                    else:
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + registerMap[coloredList[tList[0]]]
+                    tStr += "mflo " + registerMap[coloredList[lhs]] + "\n"
+                else:
+                    if tList[0].isdigit() and tList[2].isdigit():
+                        tStr += "li $s0, " + str(tList[0]) + "\n"
+                        tStr += "li $s1, " + str(tList[2]) + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[lhs]] + ", $s0, $s1 \n"
+
+                    elif tList[2].isdigit():
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[0]]] + ", " + str(tList[2]) + "\n"
+                    elif tList[0].isdigit():
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[2]]] + ", " + str(tList[0]) + "\n"
+                    else:
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[2]]] + ", " + registerMap[coloredList[tList[0]]] + "\n"
+                    
+            elif (tList[0] == "neg"):
+                if tList[1].isdigit():
+                    tStr += "li $s0, " + str(tList[1]) + "\n"
+                    tStr += "neg " + registerMap[coloredList[lhs]] + ", $s0\n"
+                else:
+                    tStr += "neg " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[1]]] + "\n"
+
+            elif (tList[0] == "load"):
+                tStr += "lw " + registerMap[coloredList[lhs]] + spilledVars[tList[1]] + "\n"
+        elif "print" in line:
+            tokens = tokenize.generate_tokens(cStringIO.StringIO(line).readline)
+            tList = list()
+            for t in tokens:
+                tList.append(t[1])
+            tStr += "move $a0 " + registerMap[coloredList[tList[1]]] + "\n"
+            tStr += mipsTemplate["print"]
+        elif "input" in line:
+            (lhs, rhs) = line.split('=', 2)
+            lhs = lhs.replace(" ", "")
+            tStr += mipsTemplate["input"]
+            tStr += "move " + registerMap[coloredList[lhs]] + ", $v0" + "\n"
+        elif "store" in line:
+            (_, var) = line.split()
+            if var.isdigit():
+                tStr += "li $s0, " + str(var) + "\n"
+            else:
+                tStr += "move $s0, $s1\n"
             
-    return
+            tStr += "sw $s0, " + spilledVars[var] + "\n"
+
+        mipsLines.append(tStr)
+
+    mipsLines.append(mipsTemplate["exit"])
+    if spilledVars:
+        scratchText = str("\t\t.data\n")
+        mipsLines.append(scratchText)
+        scratchText = str()
+        for var in spilledVars:
+            scratchText += spilledVars[var] + ":\t .word 0"
+            
+        mipsLines.append(scratchText)
+        
+    f = open("example1.asm", "w")
+    for line in mipsLines:
+        f.write(line)
+
+    f.close()
+    return mipsLines
 
 def getToken():
     global token_idx, token
@@ -573,23 +682,17 @@ for line in lines:
         sys.exit(-1)
 
 ast = parse()
-
 ast.wellFormed()
-
-print "AST well formed"
-print "Intermediate code: "
 ic_lines = ast.gencode()
 originalICLines = ic_lines[:]
 livenessAnalysis(reversed(ic_lines))
 inSets = inSets[::-1]
 outSets = outSets[::-1]
 intGraph = buildInterferenceGraph()    
-(coloredList, spilledList, ic_lines) = graphColoring(intGraph, 1, ic_lines, inSets, outSets, tempIdx)
+(coloredList, spilledList, ic_lines) = graphColoring(intGraph, 1, ic_lines, inSets, outSets, tempIdx, 0)
 tLines = list()
 tLines = originalICLines[:]
 for var in spilledList:
     (ic_lines, tempIdx) = modifyIC(tLines, var, tempIdx)
-print "Final IC"
-for line in ic_lines:
-    print line
-#genMIPSCode(ic_lines)
+genMIPSCode(ic_lines, spilledList, coloredList)
+print "ASM code generated and written to example1.asm"
