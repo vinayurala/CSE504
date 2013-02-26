@@ -1,0 +1,10 @@
+x = 5 * (-2 + 3);
+y = x - 2;
+a = 3;
+b = 4;
+c = a + b;
+d = 2 *c;
+e = a + b -c + d;
+print(x);
+print(y);
+print(e);

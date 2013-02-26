@@ -1,7 +1,8 @@
 import cStringIO, tokenize
 import sys
-import re
 import itertools
+import random
+import re
 
 class Token:
     def __init__(self, tok_type, tok_val, line_num):
@@ -21,13 +22,19 @@ defined_var = []
 expr_stacks = []
 inSets = []
 outSets = []
+reTryCount = 0
+ic_lines = list()
+originalICLines = list()
 intGraph = dict()
+tempIdx = 0
 binop = ["+", "-", "*", "/", "%"]
 unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
 op_map = {"+":"PLUS", "-":"MINUS", "*":"MULT", "/":"DIV", "%":"MOD", ";":"SEMI", "(": "LPAR", ")":"RPAR", "=": "ASSIGN"}
 rev_op_map = {"PLUS": "+", "MINUS": "-", "MULT": "*", "DIV": "/", "MOD":"%", "SEMI": ";", "LPAR": "(", "RPAR": ")", "ASSIGN": "="}
-in_code_op_map = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "mod", "=": ":="}
+mipsCodeMap = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "mod", "=": ":=", "neg": "neg"}
+registerMap = dict.fromkeys(range(10))
+mipsTemplate = {"input": "li $v0, 5\nsyscall\n", "print": "li $v0, 1\nsyscall\n", "exit":"li $v0, 10\nsyscall\n"}
 
 NAME            = "NAME"
 NUMBER          = "NUMBER"
@@ -61,18 +68,6 @@ class Node:
         node.level = self.level + 1
         self.children.append(node)
 
-    def toString(self):
-        s = "   " * self.level
-        if self.token == None: s += "ROOT\n"
-        elif self.token.value == "PLACEHOLDER": s += "\n"
-        else:
-            s += self.token.value + "\n"
-            
-        for child in self.children:
-            s += child.toString()
-
-        return s
-
     def wellFormed(self):
         global newly_defined_var
         iterable_list = self.children[:]
@@ -92,7 +87,7 @@ class Node:
                 iterable_list = self.children[1:]
             elif self.token.type == NAME:
                 if not self.token.value in defined_var or self.token.value == newly_defined_var:
-                    print "Variable \"" + self.token.value + "\" used before its definition"
+                    print "ERROR: Variable \"" + self.token.value + "\" used before its definition"
                     sys.exit(-1)
             elif self.token.type == SEMI:
                 newly_defined_var = None
@@ -139,14 +134,13 @@ class Node:
     def gencode(self):
         self.__parseAST__()
         postfix_exprs = self.__getPostfix__(reversed(expr_stacks))
-        #for expr in postfix_exprs:
-            #print expr
         temp_stack = []
         ic_lines = []
         line = str()
         
         tvar = "t"
-        idx = 0
+        global tempIdx
+        tempIdx = 1
 
         for expr in postfix_exprs:
             del temp_stack[:]
@@ -165,9 +159,9 @@ class Node:
                     elif t == "UMINUS":
                         t1 = temp_stack.pop()
                         line += tvar
-                        idx += 1
-                        line += str(idx) + " = " + " 0 - " + t1
-                        temp_stack.append(tvar + str(idx))
+                        tempIdx += 1
+                        line += str(tempIdx) + " = " + " 0 - " + t1
+                        temp_stack.append(tvar + str(tempIdx))
 
                     elif t == "print":
                         t1 = temp_stack.pop()
@@ -177,9 +171,9 @@ class Node:
                         t1 = temp_stack.pop()
                         t2 = temp_stack.pop()
                         line += tvar 
-                        idx += 1
-                        line += str(idx) + " = " + str(t2) + " " +  t + " " + str(t1)
-                        temp_stack.append(tvar + str(idx))
+                        tempIdx += 1
+                        line += str(tempIdx) + " = " + str(t2) + " " +  t + " " + str(t1)
+                        temp_stack.append(tvar + str(tempIdx))
 
                     atom_expr.append(line)
                     
@@ -202,7 +196,15 @@ def livenessAnalysis(icLines):
             outSet = inSet
         useSet = set()
         inSet = set()
-        if not "print" in line:
+        defSet = set()
+        if "store" in line or "load" in line:
+            if "load" in line:
+                (lhs, _) = line.split('=', 2)
+                lhs = lhs.replace(" ", "")
+                defSet.add(lhs)
+            else:
+                continue
+        elif not "print" in line:
             (lhs, rhs) = line.split('=', 2)
             lhs = lhs.replace(" ", "")
             defSet.add(lhs)
@@ -222,38 +224,179 @@ def livenessAnalysis(icLines):
         outSets.append(outSet)  
         
 def buildInterferenceGraph():
+    graph = dict()
     varSet = set()
     for inSet in inSets:
         for var in inSet:
             if var:
                 varSet.add(var)
     for outSet in outSets:
-        for var in inSet:
+        for var in outSet:
             if var:
                 varSet.add(var)
-        
-    intGraph = dict.fromkeys(list(varSet))
+    
+    varSet = varSet.union(set(defined_var))
+    graph = dict.fromkeys(list(varSet))
     varList = list(varSet)
-    for var in varList:
-        print var
     for i1, i2 in itertools.combinations(varList, 2):
         tSet = set((i1, i2))
         for set1 in inSets:
             if (tSet.issubset(set1)):
-                if intGraph[i1] is None:
-                    intGraph[i1] = set()
-                intGraph[i1].add(i2)
-                if intGraph[i2] is None:
-                    intGraph[i2] = set()
-                intGraph[i2].add(i1)
-                    
-    intGraph = dict((k, v) for k, v in intGraph.iteritems() 
-                    if v != None)
-
-    for key, value in intGraph.items():
-        print str(key) + "\t" + str(intGraph[key])
+                if graph[i1] is None:
+                    graph[i1] = set()
+                graph[i1].add(i2)
+                if graph[i2] is None:
+                    graph[i2] = set()
+                graph[i2].add(i1)
 
                     
+    print ""
+    return graph
+
+
+def modifyIC(lines, var, tempIdx):
+    
+    words = [w.find(var) for w in lines]
+    tempIdx += 1
+    tVar = "t" + str(tempIdx)
+    storeVar = "store " + str(var)
+    loadVar = str(tVar)+ " = load " + str(var)
+    
+    for w in words:
+        if w > -1:
+            idx = words.index(w)
+            reVar = "\\b" + var + "\\b"
+            exactMatches = re.findall(reVar, lines[idx])
+            if not exactMatches:
+                continue
+            else:
+                words.insert(words.index(w) + 1, -1)
+                string = lines[idx]
+                if("=" in string):
+                    if(string.find(var) > string.find("=")):
+                        lines.insert(idx, loadVar)
+                        string = lines[idx + 1].replace(var, tVar)
+                        del lines[idx + 1]
+                        lines.insert(idx+1, string)
+                    else:
+                        lines.insert(idx + 1, storeVar)
+                else:
+                    if ("print" in string):
+                        lines.insert(idx, loadVar)
+                        string = lines[idx + 1].replace(var, tVar)
+                        del lines[idx + 1]
+                        lines.insert(idx+1, string)
+                
+                    else:
+                        lines.insert(idx + 1, storeVar)
+
+    """
+    print "Modified IC: "
+    for line in lines:
+        print line
+    """
+    return (lines, tempIdx)
+
+def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
+    tStack = list()
+    coloredList = []
+    coloredList = dict.fromkeys(intGraph.keys())
+    spilledList = []
+    while (not all(intGraph[k] is None for k in intGraph)):
+        nextKey = None
+        flag = 1
+        for keys in intGraph:
+            if intGraph[keys] is None:
+                continue
+            if not flag:
+                break
+            if (len(intGraph[keys]) < 10):
+                nextKey = keys
+                flag = 0
+
+        if(flag):
+            nextKey = ""
+            for k in intGraph:
+                if not intGraph[k] is None:
+                    if len(intGraph[k]) > len(nextKey):
+                        nextKey = k
+            
+        edges = (nextKey, intGraph[nextKey])
+        del intGraph[nextKey]
+        tStack.append(edges)
+        
+    while tStack:
+        (v, E) = tStack.pop()
+        intGraph[v] = E
+        colorV = 0
+        flag = 1
+        neighborColors = list()
+        for e in E:
+            neighborColors.append(coloredList[e])
+        while(flag and colorV < 3):
+            if colorV in neighborColors:
+                colorV += 1
+            else:
+                flag = 0
+
+        if(flag):
+            spilledList.append(v)
+        else:
+            coloredList[v] = colorV
+
+    colorV = 0
+    print "Register Allocation (Try #): " + str(reTryCount)
+    for keys in coloredList:
+        if ((coloredList[keys] == None) and (not keys in spilledList)):
+            coloredList[keys] = colorV % 10
+            colorV += 1
+        if not coloredList[keys] is None:
+            print str(keys) + "\t" + str(coloredList[keys])
+    
+    print "Spilled List: "
+    for keys in spilledList:
+        print str(keys)
+
+    print ""
+    while spilledList:        
+        if(reTryCount < 2):
+            var = str(spilledList.pop())
+            tLines = list()
+            tLines = originalICLines[:]
+            (ic_lines, tempIdx) = modifyIC(tLines, var, tempIdx)
+            
+            livenessAnalysis(reversed(ic_lines))
+            inSets = inSets[::-1]
+            outSets = outSets[::-1]
+
+            intGraph = buildInterferenceGraph()    
+            (coloredList, spilledList, icLines) = graphColoring(intGraph, reTryCount + 1, ic_lines, inSets, outSets, tempIdx)
+            return (coloredList, spilledList, ic_lines)
+        
+        else:
+            return (coloredList, spilledList, ic_lines)
+
+    print ""
+    return (coloredList, spilledList, ic_lines)
+                    
+def genMIPSCode(lines):
+    f = open("example1.asm", "w")
+    regVar = "r"
+    regIdx = 0
+    for k in registerMap:
+        registerMap[k] = regVar + str(regIdx)
+        regIdx += 1
+    mipsLines = list()
+    tStr = str()
+    for line in lines:
+        if "=" in line:
+            (lhs, rhs) = line.split('=', 2)
+            rhs.replace(" ", "")
+            if len(rhs) == 1:
+                tStr = "move "
+            
+    return
+
 def getToken():
     global token_idx, token
     token_idx += 1
@@ -265,7 +408,6 @@ def getToken():
 def found(tokType):
     if(token.type == tokType):
         prev_token = token
-        #getToken()
         return True
     return False
 
@@ -274,13 +416,12 @@ def consume(tok_type):
         getToken()
         return
     else:
-        print "Expected %s not found" % rev_op_map[tok_type] + " in line: " + str(token.line_num - 1)
+        print "ERROR: Expected %s not found" % rev_op_map[tok_type] + " in line: " + str(token.line_num - 1)
         sys.exit(-1)
 
 def parse():
     getToken()
     pgm()
-    print "Program parsed successfully"
 
     return ast
 
@@ -329,7 +470,7 @@ def assignStmt(node):
         opNode.add(token)
         consume(SEMI)
     else:
-        print "Unexpected symbol: \"" + str(token.value) + "\" in line: " + str(token.line_num) + ". Expecting a variable on LHS" 
+        print "ERROR: Unexpected symbol: \"" + str(token.value) + "\" in line: " + str(token.line_num) + ". Expecting a variable on LHS" 
         sys.exit(-1)
 
 def rhs(node):
@@ -397,76 +538,58 @@ def factor(node):
         node.addNode(rparNode)
         consume(RPAR)
     else:
-        print "Unexpected symbol: \"" + rev_op_map[token.type] + "\" in line: " + str(token.line_num) + ". Expecting either a variable or number or an expression."
+        print "ERROR: Unexpected symbol: \"" + rev_op_map[token.type] + "\" in line: " + str(token.line_num) + ". Expecting either a variable or number or an expression."
         sys.exit(-1)
     
 
 def get_tokens(lines):
     token_list = []
     token_list = tokenize.generate_tokens(cStringIO.StringIO(lines).readline)
-
+        
     return token_list        
 
-with open('example2.proto') as f:
+
+with open('example3.proto') as f:
     token_idx = -1
     lines = f.readlines()
 for line in lines:
     tokens = get_tokens(line)
-    for t in tokens:
-        if (t[0] == 4):
-            line_num += 1
-            continue
-        elif (t[0] == 0):
-            continue
-        if(t[0] == 51):
-            # print op_map[t[1]] + "\t" + str(t[1])
-            if(not t[1] in op_map):
-                print "Unexpected symbol \'" + str(t[1]) + "\' in line: " + str(line_num)
-                sys.exit(-1)
-            token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
-        else:
-            # print token_map[t[0]] + "\t" + str(t[1])
-            token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
+    try:
+        for t in tokens:
+            if (t[0] == 4):
+                line_num += 1
+                continue
+            elif (t[0] == 0):
+                continue
+            if(t[0] == 51):
+                if(not t[1] in op_map):
+                    print "Unexpected symbol \'" + str(t[1]) + "\' in line: " + str(line_num)
+                    sys.exit(-1)
+                token_list.append(Token(op_map[t[1]], str(t[1]), line_num))
+            else:
+                token_list.append(Token(token_map[t[0]], str(t[1]), line_num))
+    except:
+        print "ERROR: Probably because of a missing parantheses in line: " + str(line_num)
+        sys.exit(-1)
 
-"""
-for t in token_list:
-    print t.type + "\t" + t.value
-"""
 ast = parse()
-#print ast.toString()
+
 ast.wellFormed()
 
-#for var in defined_var:
-    #print var
-"""
-ast.__parseAST__()
-print "Expression Stack:"
-for t in reversed(expr_stacks):
-    print str(t)
-infix_expr = ast.getPostfix(reversed(expr_stacks))
-for expr in infix_expr:
-    print expr
-
-"""
-"""
-for var in defined_var:
-    print var
-"""
 print "AST well formed"
 print "Intermediate code: "
 ic_lines = ast.gencode()
-for line in ic_lines:
-    print line
-
+originalICLines = ic_lines[:]
 livenessAnalysis(reversed(ic_lines))
 inSets = inSets[::-1]
 outSets = outSets[::-1]
-"""
-print "In sets: "
-for inSet in inSets:
-    print str(inSet)
-print "Out sets: "
-for outSet in outSets:
-    print str(outSet)
-"""
-buildInterferenceGraph()    
+intGraph = buildInterferenceGraph()    
+(coloredList, spilledList, ic_lines) = graphColoring(intGraph, 1, ic_lines, inSets, outSets, tempIdx)
+tLines = list()
+tLines = originalICLines[:]
+for var in spilledList:
+    (ic_lines, tempIdx) = modifyIC(tLines, var, tempIdx)
+print "Final IC"
+for line in ic_lines:
+    print line
+#genMIPSCode(ic_lines)
