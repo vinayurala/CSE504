@@ -27,14 +27,12 @@ ic_lines = list()
 originalICLines = list()
 intGraph = dict()
 tempIdx = 0
-binop = ["+", "-", "*", "/", "%"]
-unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
 op_map = {"+":"PLUS", "-":"MINUS", "*":"MULT", "/":"DIV", "%":"MOD", ";":"SEMI", "(": "LPAR", ")":"RPAR", "=": "ASSIGN"}
 rev_op_map = {"PLUS": "+", "MINUS": "-", "MULT": "*", "DIV": "/", "MOD":"%", "SEMI": ";", "LPAR": "(", "RPAR": ")", "ASSIGN": "="}
 mipsCodeMap = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "div", "=": ":=", "neg": "neg"}
-registerMap = dict.fromkeys(range(10))
 mipsTemplate = {"input": "li $v0, 5\nsyscall\n", "print": "li $v0, 1\nsyscall\n", "exit":"li $v0, 10\nsyscall\n", "space": ".data\n\tspace:\t.asciiz \"\\n\"", "printLn": "addi $v0, $zero, 4\nla $a0, space\nsyscall\n"}
+registerMap = dict.fromkeys(range(10))
 
 NAME            = "NAME"
 NUMBER          = "NUMBER"
@@ -51,7 +49,6 @@ EOF             = "EOF"
 NEWLINE         = "NEWLINE"
 INPUT           = "INPUT"
 PRINT           = "PRINT"
-ZERO            = Token(None, "0", None)
 PLACEHOLDER     = Token(None, "PLACEHOLDER", None)
 uMinusToken     = Token(None, "UMINUS", None)
 
@@ -405,9 +402,9 @@ def genMIPSCode(lines, spilledList, coloredList):
             elif (any (op in rhs for op in opList)):
                 if "%" in rhs:
                     if tList[0].isdigit() and tList[2].isdigit():
-                        tStr += "li $s0, " + str(tList[0]) + "\n"
-                        tStr += "li $s1, " + str(tList[2]) + "\n"
-                        tStr += mipsCodeMap[tList[1]] + " " + "$s0, $s1\n"
+                        tStr += "li $s7, " + str(tList[0]) + "\n"
+                        tStr += "li $s8, " + str(tList[2]) + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + "$s7, $s8\n"
                         
                     elif tList[2].isdigit():
                         tStr += "li $s8, " + str(tList[2]) + "\n"
@@ -420,14 +417,18 @@ def genMIPSCode(lines, spilledList, coloredList):
                     tStr += "mfhi " + registerMap[coloredList[lhs]] + "\n"
                 elif tList[1] == "/":
                     if tList[0].isdigit() and tList[2].isdigit():
-                        tStr += "li $s0, " + str(tList[0]) + "\n"
-                        tStr += "li $s1, " + str(tList[2]) + "\n"
-                        tStr += mipsCodeMap[tList[1]] + " " + "$s0, $s1\n"
+                        tStr += "li $s7, " + str(tList[0]) + "\n"
+                        tStr += "li $s8, " + str(tList[2]) + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + "$s7, $s8\n"
  
                     elif tList[2].isdigit():
-                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[0]]] + ", " + str(tList[2]) + "\n"
+                        tStr += "li $s8, " + str(tList[2]) + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[0]]] + ", $s8\n"
+    
                     elif tList[0].isdigit():
-                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + str(tList[0]) + "\n"                        
+                        tStr += "li $s8, " + str(tList[0]) + "\n"
+                        tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", $s8\n"
+
                     else:
                         tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + registerMap[coloredList[tList[0]]]
                     tStr += "mflo " + registerMap[coloredList[lhs]] + "\n"
