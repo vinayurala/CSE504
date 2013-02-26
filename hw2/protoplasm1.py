@@ -32,7 +32,9 @@ unop = ["-"]
 token_map = {0: "ENDMARKER", 1:"NAME", 2:"NUMBER", 3:"STRING", 4:"NEWLINE", 5:"INDENT", 6:"DEDENT", 51:"OP"}
 op_map = {"+":"PLUS", "-":"MINUS", "*":"MULT", "/":"DIV", "%":"MOD", ";":"SEMI", "(": "LPAR", ")":"RPAR", "=": "ASSIGN"}
 rev_op_map = {"PLUS": "+", "MINUS": "-", "MULT": "*", "DIV": "/", "MOD":"%", "SEMI": ";", "LPAR": "(", "RPAR": ")", "ASSIGN": "="}
-in_code_op_map = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "mod", "=": ":="}
+mipsCodeMap = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "mod", "=": ":=", "neg": "neg"}
+registerMap = dict.fromkeys(range(10))
+mipsTemplate = {"input": "li $v0, 5\nsyscall\n", "print": "li $v0, 1\nsyscall\n", "exit":"li $v0, 10\nsyscall\n"}
 
 NAME            = "NAME"
 NUMBER          = "NUMBER"
@@ -267,32 +269,33 @@ def modifyIC(lines, var, tempIdx):
             exactMatches = re.findall(reVar, lines[idx])
             if not exactMatches:
                 continue
-            words.insert(words.index(w) + 1, -1)
-            string = lines[idx]
-            if("=" in string):
-                if(string.find(var) > string.find("=")):
-                    lines.insert(idx, loadVar)
-                    string = lines[idx + 1].replace(var, tVar)
-                    del lines[idx + 1]
-                    lines.insert(idx+1, string)
-                else:
-                    lines.insert(idx + 1, storeVar)
             else:
-                if ("print" in string):
-                    lines.insert(idx, loadVar)
-                    string = lines[idx + 1].replace(var, tVar)
-                    del lines[idx + 1]
-                    lines.insert(idx+1, string)
-                
+                words.insert(words.index(w) + 1, -1)
+                string = lines[idx]
+                if("=" in string):
+                    if(string.find(var) > string.find("=")):
+                        lines.insert(idx, loadVar)
+                        string = lines[idx + 1].replace(var, tVar)
+                        del lines[idx + 1]
+                        lines.insert(idx+1, string)
+                    else:
+                        lines.insert(idx + 1, storeVar)
                 else:
-                    lines.insert(idx + 1, storeVar)
+                    if ("print" in string):
+                        lines.insert(idx, loadVar)
+                        string = lines[idx + 1].replace(var, tVar)
+                        del lines[idx + 1]
+                        lines.insert(idx+1, string)
+                
+                    else:
+                        lines.insert(idx + 1, storeVar)
 
     """
     print "Modified IC: "
     for line in lines:
         print line
     """
-    return lines
+    return (lines, tempIdx)
 
 def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
     tStack = list()
@@ -360,7 +363,7 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
             var = str(spilledList.pop())
             tLines = list()
             tLines = originalICLines[:]
-            ic_lines = modifyIC(tLines, var, tempIdx)
+            (ic_lines, tempIdx) = modifyIC(tLines, var, tempIdx)
             
             livenessAnalysis(reversed(ic_lines))
             inSets = inSets[::-1]
@@ -376,6 +379,24 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx):
     print ""
     return (coloredList, spilledList, ic_lines)
                     
+def genMIPSCode(lines):
+    f = open("example1.asm", "w")
+    regVar = "r"
+    regIdx = 0
+    for k in registerMap:
+        registerMap[k] = regVar + str(regIdx)
+        regIdx += 1
+    mipsLines = list()
+    tStr = str()
+    for line in lines:
+        if "=" in line:
+            (lhs, rhs) = line.split('=', 2)
+            rhs.replace(" ", "")
+            if len(rhs) == 1:
+                tStr = "move "
+            
+    return
+
 def getToken():
     global token_idx, token
     token_idx += 1
@@ -567,7 +588,8 @@ intGraph = buildInterferenceGraph()
 tLines = list()
 tLines = originalICLines[:]
 for var in spilledList:
-    ic_lines = modifyIC(tLines, var, tempIdx)
+    (ic_lines, tempIdx) = modifyIC(tLines, var, tempIdx)
 print "Final IC"
 for line in ic_lines:
     print line
+#genMIPSCode(ic_lines)
