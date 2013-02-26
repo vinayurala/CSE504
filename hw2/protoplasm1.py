@@ -528,7 +528,7 @@ def get_tokens(lines):
     return token_list        
 
 
-with open('example1.proto') as f:
+with open('example3.proto') as f:
     token_idx = -1
     lines = f.readlines()
 for line in lines:

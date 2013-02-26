@@ -1,0 +1,30 @@
+t2 =  0 - 2
+t3 = t2 + 3
+t4 = 5 * t3
+x = t4
+t5 = x - 2
+y = t5
+a = 3
+store a
+b = 4
+store b
+t11 = load b
+t11 = load a
+t6 = t11 + t11
+c = t6
+store c
+t11 = load c
+t7 = 2 * t11
+d = t7
+t11 = load c
+t8 = t11 + d
+t11 = load b
+t9 = t11 - t8
+store t9
+t11 = load t9
+t11 = load a
+t10 = t11 + t11
+e = t10
+print x
+print y
+print e
