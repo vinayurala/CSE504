@@ -344,7 +344,7 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
     
     return (coloredList, spilledList)
                     
-def genMIPSCode(lines, spilledList, coloredList):
+def genMIPSCode(lines, spilledList, coloredList, targetFile):
 
     regVar = "t"
     regIdx = 0
@@ -485,7 +485,7 @@ def genMIPSCode(lines, spilledList, coloredList):
             
         mipsLines.append(scratchText)
 
-    f = open("example1.asm", "w")
+    f = open(targetFile, "w")
     for line in mipsLines:
         f.write(line)
 
@@ -644,9 +644,18 @@ def get_tokens(lines):
     return token_list        
 
 
-with open('example3.proto') as f:
-    token_idx = -1
-    lines = f.readlines()
+numArgs = len(sys.argv)
+if (numArgs != 2):
+    print "Usage: protoplasm.py <Protofilename>"
+    sys.exit(-1)
+fileName = sys.argv[1]
+token_idx = -1
+try:
+    with open(fileName, "r") as f:
+        lines = f.readlines()
+except IOError:
+    print "File \"" + fileName + "\" does not exist!!"
+    sys.exit(-1)
 for line in lines:
     tokens = get_tokens(line)
     try:
@@ -680,5 +689,7 @@ tLines = list()
 tLines = originalICLines[:]
 for var in spilledList:
     (ic_lines, tempIdx) = modifyIC(tLines, var, tempIdx)
-genMIPSCode(ic_lines, spilledList, coloredList)
-print "Compilation succeeded, output written to example1.asm"
+(targetFile, _) = fileName.split('.', 2)
+targetFile += ".asm"
+genMIPSCode(ic_lines, spilledList, coloredList, targetFile)
+print "Compilation succeeded, output written to \"" + targetFile + "\""
