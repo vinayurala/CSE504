@@ -70,3 +70,7 @@ Additonally, a map of variables to its allocated registers is also
 maintained, called 'coloredList'. There is a list to hold the spilled
 variables.
 =======================================================================
+Git related info:
+
+The code is on branch hw2 annotated with tag 'hw2-handin'
+=======================================================================
