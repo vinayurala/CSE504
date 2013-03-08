@@ -125,7 +125,7 @@ def p_ae_binaryop(p):
           | AE LTEQ AE
           | AE GT AE
           | AE GTEQ AE'''
-    print "fuck"
+    #print "fuck"
     p[0] = Node("binop",[p[1],p[3]],p[2])
 
 def p_ae_uminus(p):
@@ -158,9 +158,9 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-s = ''' if(a-b) then s=d;
+s = """if(a-b) then s=d;
 b= a+-c;
-print (c);'''
+print (c);"""
 
 result = parser.parse(s)
 graph(result)
