@@ -1,0 +1,167 @@
+# Yacc example
+import pydot
+
+import ply.yacc as yacc
+
+import sys
+
+# Get the token map from the lexer.  This is required.
+from lexer import tokens
+
+precedence = (('left', 'OR'),
+              ('left', 'AND'),
+              ('nonassoc', 'EQUALS', 'NOTEQ', 'LTEQ','LT', 'GT','GTEQ'),
+              ('left', 'PLUS', 'MINUS'),
+              ('left', 'TIMES', 'DIVIDE', 'MOD'),
+              ('right', 'NOT'),
+              ('right', 'UMINUS'),
+              )
+
+
+#binop_list = ["+","-","*","/","%","||","&&","==","!=","<","<=",">",">="]
+#unop_list = ["-","!"]
+
+
+class Node:
+    def __init__(self,type,children=None,leaf=None):
+        self.type = type
+        if children:
+            self.children = children
+        else:
+            self.children = [ ]
+        self.leaf = leaf
+
+        
+
+
+def graph(node):
+    edges = descend(node)
+    g=pydot.graph_from_edges(edges)
+    f = "graph.png"
+    g.write_png(f, prog='dot')
+
+
+def descend(node):
+    edges = []
+    
+    if node.__class__ != Node:
+        return []
+   
+    for i in node.children:
+        print i
+        edges.append(((node.type,node.leaf),(i.type,i.leaf)))
+        edges = edges + descend(i)
+    return edges
+
+
+
+
+##################
+def p_pgm_stmtseq(p):
+    'Pgm : Stmtseq '
+    p[0] = p[1]
+
+
+def p_stmtseq_stmt(p):
+    'Stmtseq : Stmt'
+    p[0] = p[1]
+
+def p_stmtseq_stmt_stmtseq(p):
+    'Stmtseq : Stmt Stmtseq'
+    p[0] = Node("stmtseq",children = [p[1],p[2]])
+
+
+def p_stmt_assign(p):
+    '''Stmt : Assign
+            | Print
+            | If
+            | While
+            | Block''' 
+    p[0] = p[1]
+
+def p_assign_rhs(p):
+    ' Assign : ID EQ Rhs SCOLON'
+    p[1] = Node("ID",leaf = p[1])
+    p[0] = Node("eq",[p[1],p[3]],p[2])
+
+def p_print_ae(p):
+    ' Print : PRINT LPAREN AE RPAREN SCOLON'  # Only one child for print
+    p[0] = Node("print",[p[3]],p[1])
+
+def p_block_stmtseq(p):
+    'Block : LCURLY Stmtseq RCURLY'
+    p[0] = p[2]
+
+
+def p_if(p):
+    'If : IF AE THEN Stmt'                                          # No Else
+    p[0] = Node("if",[p[2],p[4]],p[1])
+        # else:
+#p[0] = Node("if",[p[2],p[4],p[6]],p[1])
+
+def p_while(p):
+    'While : WHILE AE DO Stmt'
+    p[0] = Node("while",[p[2],p[4]],p[1])
+
+def p_rhs(p):
+    '''Rhs : AE
+           | INPUT LPAREN RPAREN'''
+    if len(p)>2:
+        p[0] = Node("input",leaf = p[1])
+    else:
+        p[0] = p[1]
+
+def p_ae_binaryop(p):
+    '''AE : AE PLUS AE
+          | AE MINUS AE
+          | AE TIMES AE
+          | AE DIVIDE AE
+          | AE MOD AE
+          | AE AND AE
+          | AE OR AE
+          | AE EQUALS AE
+          | AE NOTEQ AE
+          | AE LT AE
+          | AE LTEQ AE
+          | AE GT AE
+          | AE GTEQ AE'''
+    print "fuck"
+    p[0] = Node("binop",[p[1],p[3]],p[2])
+
+def p_ae_uminus(p):
+    'AE : MINUS AE %prec UMINUS'
+    p[1] = Node("NOT",None,"!")
+    p[0] = Node("Unop",[p[1],p[2]],None)
+
+
+def p_ae_unop(p):
+    ' AE : NOT AE'
+    p[1] = Node("NOT",None,"!")
+    p[0] = Node("Unop",[p[1],p[2]],None)
+
+def p_ae_parentheses(p):
+    ' AE : LPAREN AE RPAREN'
+    p[0] = p[2]
+
+def p_ae_intconst(p):
+    ' AE : NUMBER'
+    p[0] = Node("NUMBER",leaf = p[1])
+
+def p_ae_id(p):
+    ' AE : ID'
+    p[0] = Node("ID",leaf = p[1])
+
+
+def p_error(p):
+	print "Syntax error in line number %d" % p.lineno()
+	sys.exit()
+
+parser = yacc.yacc()
+
+s = ''' if(a-b) then s=d;
+b= a+-c;
+print (c);'''
+
+result = parser.parse(s)
+graph(result)
+
