@@ -1,4 +1,5 @@
-#import pydot
+# Yacc example
+import pydot
 
 import ply.yacc as yacc
 
@@ -32,7 +33,7 @@ class Node:
 
 
 
-"""
+
 def graph(node):
     edges = descend(node)
     g=pydot.graph_from_edges(edges)
@@ -51,7 +52,7 @@ def descend(node):
         edges = edges + descend(i)
     return edges
 
-"""
+
 
 
 ##################
@@ -88,10 +89,9 @@ def p_print_ae(p):
 
 def p_block_stmtseq(p):
     'Block : LCURLY Stmtseq RCURLY'
-    p[1] = Node("LCURLY", leaf = p[1])
-    p[3] = Node("RCURLY", leaf = p[3])
-    p[0] = Node("block", children = [p[1], p[2], p[3]])
-
+    p[1] = Node("LCURLY",leaf = p[1])
+    p[3] = Node("RCURLY",leaf = p[3])
+    p[0] = Node("block",children = [p[1],p[2],p[3]])
 
 def p_if(p):
     'If : IF AE THEN Stmt'                                          # No Else
@@ -125,19 +125,16 @@ def p_ae_binaryop(p):
           | AE LTEQ AE
           | AE GT AE
           | AE GTEQ AE'''
-    #print "fuck"
     p[0] = Node("binop",[p[1],p[3]],p[2])
 
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
-    p[1] = Node("MINUS",None,"-")
-    p[0] = Node("Unop",[p[1],p[2]],"-")
+    p[0] = Node("unop",[p[2]],"-")
 
 
 def p_ae_unop(p):
     ' AE : NOT AE'
-    p[1] = Node("NOT",None,"!")
-    p[0] = Node("Unop",[p[1],p[2]],"!")
+    p[0] = Node("unop",[p[2]],"!")
 
 def p_ae_parentheses(p):
     ' AE : LPAREN AE RPAREN'
@@ -153,23 +150,22 @@ def p_ae_id(p):
 
 
 def p_error(p):
-	# print "Syntax error in line number " + str(p.lineno - 1)
-    print "Illegal character: " + p.value[0]
-    sys.exit()
+	print "Syntax error in line number XXX (need to figure this out)"
+	sys.exit()
 
-yacc.yacc()
-if(len(sys.argv) != 2):
-    print "Usage: python parser.py <ProtoFilename>"
-    sys.exit(-1)
-try:
-    f = open(sys.argv[1])
-    result = yacc.parse(f.read())
-except IOError:
-    print "Filename " + sys.argv[1] + " not found!!"
-    sys.exit(-1)
+parser = yacc.yacc()
 
-#graph(result)
-print "Program parsed successfully"
+s = ''' {if(3-4) then 
+            {if(a==5)
+            then a=5;}}
+{b= 2+-4;}
+c= b+2;
+{s=3;}
+print (c);'''
+
+result = parser.parse(s)
+graph(result)
+
 
 global_defined_var = []
 found_in_loop = []
@@ -203,9 +199,12 @@ def wellformed(node):
             for var in found_in_loop:
                 if var in global_defined_var:
                     found_in_loop.remove(var)
-            return
+#return
     elif node.type == "ID":
         var = node.leaf
+        print var
+        print "global" ,global_defined_var[:]
+        print "loop",found_in_loop[:]
         if not var in global_defined_var:
             if not var in found_in_loop:
                 print "ERROR: Variable \"" + var + "\" used before its definition"
