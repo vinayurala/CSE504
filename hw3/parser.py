@@ -31,7 +31,7 @@ class Node:
             self.children = [ ]
         self.leaf = leaf
 
-        
+
 
 
 def graph(node):
@@ -48,7 +48,6 @@ def descend(node):
         return []
    
     for i in node.children:
-        print i
         edges.append(((node.type,node.leaf),(i.type,i.leaf)))
         edges = edges + descend(i)
     return edges
@@ -130,14 +129,14 @@ def p_ae_binaryop(p):
 
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
-    p[1] = Node("NOT",None,"!")
-    p[0] = Node("Unop",[p[1],p[2]],None)
+    p[1] = Node("MINUS",None,"-")
+    p[0] = Node("Unop",[p[1],p[2]],"-")
 
 
 def p_ae_unop(p):
     ' AE : NOT AE'
     p[1] = Node("NOT",None,"!")
-    p[0] = Node("Unop",[p[1],p[2]],None)
+    p[0] = Node("Unop",[p[1],p[2]],"!")
 
 def p_ae_parentheses(p):
     ' AE : LPAREN AE RPAREN'
@@ -153,15 +152,70 @@ def p_ae_id(p):
 
 
 def p_error(p):
-	print "Syntax error in line number %d" % p.lineno()
+	print "Syntax error in line number XXX (need to figure this out)"
 	sys.exit()
 
 parser = yacc.yacc()
 
-s = """if(a-b) then s=d;
-b= a+-c;
-print (c);"""
+s = ''' {if(3-4) then
+            if(a=10)
+            then a=5;}
+b= 2+-4;
+c= b+2;
+s=3;
+print (a);'''
 
 result = parser.parse(s)
 graph(result)
+
+
+global_defined_var = []
+found_in_loop = []
+inside = 0
+
+
+def wellformed(node):
+    global found_in_loop
+    global inside
+    global global_defined_var
+    iterable_list = node.children[:]
+    if node.type == "eq":
+        if inside == 0:
+            lhs_var = node.children[0].leaf
+            if lhs_var in global_defined_var:
+                pass
+            else:
+                global_defined_var.append(lhs_var)
+        else:
+            lhs_var = node.children[0].leaf
+            if lhs_var in global_defined_var:
+                pass
+            else:
+                found_in_loop.append(lhs_var)
+        iterable_list = node.children[1:]
+    elif(node.type == "if") or (node.type == "while"):
+            inside = 1
+            node1 = node.children[1]
+            wellformed(node1)
+            inside = 0
+            for var in found_in_loop:
+                if var in global_defined_var:
+                    found_in_loop.remove(var)
+            return
+    elif node.type == "ID":
+        var = node.leaf
+        if not var in global_defined_var:
+            if not var in found_in_loop:
+                print "ERROR: Variable \"" + var + "\" used before its definition"
+                sys.exit(-1)
+            else:
+                print "ERROR: Variable \"" + var + "\" not defined in every path"
+                sys.exit(-1)
+    for child in iterable_list:
+        wellformed(child)
+    
+    return
+
+
+wellformed(result)
 
