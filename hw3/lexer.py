@@ -35,6 +35,7 @@ tokens = [
           'LTEQ',
           'GT',
           'LT',
+          'COMMENT'
           
           ] + list(reserved.values())
 
@@ -74,6 +75,10 @@ def t_NUMBER(t):
     t.value = int(t.value)
     return t
 
+# for comments
+def t_COMMENT(t):
+    r'\/\/.*'
+    pass
 # Define a rule so we can track line numbers
 def t_newline(t):
     r'\n+'
