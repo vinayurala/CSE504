@@ -15,7 +15,7 @@ class PBF:
         t2 = str()
         for it in t1:
             if (it.isalpha()):
-                t2 += it + '!'
+                t2 += it + ' !'
             elif(it == '|'):
                 t2 += '&'
             elif(it == '&'):
@@ -37,26 +37,23 @@ class PBF:
             if(postfix_str[idx] == '!'):
                 t1 = str(temp_stack.pop())
                 t1 = t1.replace(' ' , '')
-                if(len(t1) == 3):
+                if(len(t1) >= 3):
                     t2 = self.__apply_demorgans__(t1)
                     temp_stack.append(t2)
                     if(t1[1] == '&'):
                         nnfObj = AND(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
                     else:
                         nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
-                        
-                elif(len(t1) > 3):
-                    t2 = self.__apply_demorgans__(t1)
-                    temp_stack.append(t2)
-                    if(t1[1] == '&'):
-                        nnfObj = AND(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
-                    else:
-                        nnfObj = OR(NOT(PROP(t1[0])), NOT(PROP(t1[2])))
-
+                    
                 else:
-                    t1 = t1 + " ! "
-                    nnfObj = NOT(PROP(t1))
-                    temp_stack.append(t1)
+                    if('!' in t1):
+                        t1 = t1[0] + ' '
+                        nnfObj = PROP(t1)
+                        temp_stack.append(t1)
+                    else:
+                        t1 = t1 + " ! "
+                        nnfObj = NOT(PROP(t1))
+                        temp_stack.append(t1)
             elif(postfix_str[idx] == '&'):
                 t1 = temp_stack.pop()
                 t2 = temp_stack.pop()
@@ -150,8 +147,9 @@ def parse(postfix_str):
 
 #PBFObj = AND(PROP("x"), NOT(OR(PROP("y"), PROP("z"))))
 #PBFObj = AND(PROP("x"), AND(NOT(PROP("y")), NOT(PROP("z"))))
-PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
+#PBFObj = AND(PROP("w"), NOT(AND(NOT(OR(PROP("x"), PROP("y"))), PROP("z"))))
 #PBFObj = AND(PROP("w"), OR(PROP("x"), OR(PROP("y"), NOT(PROP("z")))))
+PBFObj = OR(NOT(NOT(PROP("x"))), NOT(AND(PROP("y"), PROP("z"))))
 print "Defined PBF Object: "
 print PBFObj
 res = PBFObj.isNNF()

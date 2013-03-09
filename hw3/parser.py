@@ -153,8 +153,9 @@ def p_ae_id(p):
 
 
 def p_error(p):
-	print "Syntax error in line number " + str(p.lineno - 1)
-	sys.exit()
+	# print "Syntax error in line number " + str(p.lineno - 1)
+    print "Illegal character: " + p.value[0]
+    sys.exit()
 
 yacc.yacc()
 if(len(sys.argv) != 2):
