@@ -1,5 +1,4 @@
-# Yacc example
-import pydot
+#import pydot
 
 import ply.yacc as yacc
 
@@ -33,7 +32,7 @@ class Node:
 
 
 
-
+"""
 def graph(node):
     edges = descend(node)
     g=pydot.graph_from_edges(edges)
@@ -52,7 +51,7 @@ def descend(node):
         edges = edges + descend(i)
     return edges
 
-
+"""
 
 
 ##################
@@ -89,7 +88,9 @@ def p_print_ae(p):
 
 def p_block_stmtseq(p):
     'Block : LCURLY Stmtseq RCURLY'
-    p[0] = p[2]
+    p[1] = Node("LCURLY", leaf = p[1])
+    p[3] = Node("RCURLY", leaf = p[3])
+    p[0] = Node("block", children = [p[1], p[2], p[3]])
 
 
 def p_if(p):
@@ -152,22 +153,22 @@ def p_ae_id(p):
 
 
 def p_error(p):
-	print "Syntax error in line number XXX (need to figure this out)"
+	print "Syntax error in line number " + str(p.lineno - 1)
 	sys.exit()
 
-parser = yacc.yacc()
+yacc.yacc()
+if(len(sys.argv) != 2):
+    print "Usage: python parser.py <ProtoFilename>"
+    sys.exit(-1)
+try:
+    f = open(sys.argv[1])
+    result = yacc.parse(f.read())
+except IOError:
+    print "Filename " + sys.argv[1] + " not found!!"
+    sys.exit(-1)
 
-s = ''' {if(3-4) then
-            if(a=10)
-            then a=5;}
-b= 2+-4;
-c= b+2;
-s=3;
-print (a);'''
-
-result = parser.parse(s)
-graph(result)
-
+#graph(result)
+print "Program parsed successfully"
 
 global_defined_var = []
 found_in_loop = []
