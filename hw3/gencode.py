@@ -14,7 +14,12 @@ def parsetree(node):
             for child in node.children:
                 parsetree(child)
         else:
+            for child in node.children:
+                parsetree(child)
             
+            block.append(node.leaf)
 
-def gencode():
+
+def gencode(blocks):
     
+    return 

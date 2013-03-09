@@ -33,7 +33,7 @@ class Node:
 
 
 
-
+"""
 def graph(node):
     edges = descend(node)
     g=pydot.graph_from_edges(edges)
@@ -51,7 +51,7 @@ def descend(node):
         edges.append(((node.type,node.leaf),(i.type,i.leaf)))
         edges = edges + descend(i)
     return edges
-
+"""
 
 
 
@@ -150,11 +150,13 @@ def p_ae_id(p):
 
 
 def p_error(p):
-	print "Syntax error in line number XXX (need to figure this out)"
-	sys.exit()
+	#print "Syntax error in line number XXX (need to figure this out)"
+    print "Illegal character: " + str(p.value[0])
+    sys.exit()
 
 parser = yacc.yacc()
 
+"""
 s = ''' {if(3-4) then 
             {if(a==5)
             then a=5;}}
@@ -162,9 +164,9 @@ s = ''' {if(3-4) then
 c= b+2;
 {s=3;}
 print (c);'''
-
-result = parser.parse(s)
-graph(result)
+"""
+#result = parser.parse(s)
+# graph(result)
 
 
 global_defined_var = []
@@ -202,9 +204,9 @@ def wellformed(node):
 #return
     elif node.type == "ID":
         var = node.leaf
-        print var
-        print "global" ,global_defined_var[:]
-        print "loop",found_in_loop[:]
+        #print var
+        #print "global" ,global_defined_var[:]
+        #print "loop",found_in_loop[:]
         if not var in global_defined_var:
             if not var in found_in_loop:
                 print "ERROR: Variable \"" + var + "\" used before its definition"
@@ -218,5 +220,5 @@ def wellformed(node):
     return
 
 
-wellformed(result)
+# wellformed(result)
 

@@ -1,4 +1,5 @@
-{if(3-4) 
+a = input();
+{if(3-4)
 	 then if(a==10) 
  	     	  then a=5;}
 b= 2+-4;
