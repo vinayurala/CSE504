@@ -1,7 +1,7 @@
 import sys
 from ply.yacc import *
 from parser import *
-#from gencode import *
+from gencode import *
 
 if (len(sys.argv) != 2):
     print "Usage: python " + sys.argv[0] + " <Protofilename>"
@@ -16,4 +16,4 @@ except IOError:
 
 wellformed(astRoot)
 print "AST wellformed"
-
+gencode(astRoot)

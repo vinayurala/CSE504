@@ -81,11 +81,13 @@ def p_stmt_assign(p):
 def p_assign_rhs(p):
     ' Assign : ID EQ Rhs SCOLON'
     p[1] = Node("ID",leaf = p[1])
-    p[0] = Node("eq",[p[1],p[3]],p[2])
+    p[4] = Node("SEMI", leaf = p[4])
+    p[0] = Node("eq",[p[1],p[3], p[4]],p[2])
 
 def p_print_ae(p):
     ' Print : PRINT LPAREN AE RPAREN SCOLON'  # Only one child for print
-    p[0] = Node("print",[p[3]],p[1])
+    p[5] = Node("SEMI", leaf = p[5])
+    p[0] = Node("print",[p[3], p[5]],p[1])
 
 def p_block_stmtseq(p):
     'Block : LCURLY Stmtseq RCURLY'
@@ -129,12 +131,12 @@ def p_ae_binaryop(p):
 
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
-    p[0] = Node("unop",[p[2]],"-")
+    p[0] = Node("unop",[p[2]],"UMINUS")
 
 
 def p_ae_unop(p):
     ' AE : NOT AE'
-    p[0] = Node("unop",[p[2]],"!")
+    p[0] = Node("unop",[p[2]],"NOT")
 
 def p_ae_parentheses(p):
     ' AE : LPAREN AE RPAREN'
