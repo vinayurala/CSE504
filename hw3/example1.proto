@@ -2,12 +2,12 @@ a = input();
 if(3-4) then { 
 if(a==10) then {
 	  a = 5;}
-	a = a + 5;}
+	a = a + 5 * 2;}
 b= 2+-4;
 c= b+2;
 s=3;
 while (c < 3) do
 {
-a = a + 1;
-b = b + 2;
+   b = b + 2;
+   a = a + 3;
 }
