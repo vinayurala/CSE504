@@ -90,18 +90,31 @@ def p_assign_rhs_error(p):                        #ERROR
     print "Syntax error :: Semicolon Missing in Line number %d"% (p.lineno(1))
     sys.exit()
 
+def p_no_rhs_error(p):                            #ERROR
+    'Assign : ID EQ SCOLON'
+    print "Expected an expression or number after \"=\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
+
 def p_print_ae(p):
     ' Print : PRINT LPAREN AE RPAREN SCOLON'  # Only one child for print
     p[5] = Node("SEMI", leaf = p[5])
     p[0] = Node("print",[p[3], p[5]],p[1])
 
 
-
-def p_print_ae_error(p):                    #ERROR
+def p_print_ae_error(p):                          #ERROR
     ' Print : PRINT LPAREN AE RPAREN '
     print "Syntax error :: Semicolon Missing in Line number %d"% (p.lineno(1))
     sys.exit()
 
+def p_lparen_error(p):                            #ERROR
+    'Print : PRINT AE RPAREN SCOLON'
+    print "Synatx error: Missing \"(\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
+    
+def p_rparen_error(p):                            #ERROR
+    'Print : PRINT LPAREN AE SCOLON'
+    print "Synatx error: Missing \")\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
 
 def p_block_stmtseq(p):
     'Block : LCURLY Stmtseq RCURLY'
@@ -119,9 +132,19 @@ def p_if(p):
     else:
         p[0] = Node("if",[p[2],p[4],p[6]],p[1])
 
+def p_if_error(p):                               #ERROR
+    'If : IF AE Stmt'
+    print "Missing keyword \"then\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
+
 def p_while(p):
     'While : WHILE AE DO Stmt'
     p[0] = Node("while",[p[2],p[4]],p[1])
+
+def p_while_error(p):                            #ERROR
+    'While : WHILE AE Stmt'
+    print "Missing keyword \"do\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
 
 def p_rhs(p):
     '''Rhs : AE
@@ -130,6 +153,17 @@ def p_rhs(p):
         p[0] = Node("input",leaf = p[1])
     else:
         p[0] = p[1]
+
+def rhs_ip_lparen_error(p):                      #ERROR
+    'Rhs : INPUT RPAREN'
+    print "Missing \"(\" after keyword \"input\" in line: " + str(p.lineno(1))
+    sys.exit(-1) 
+
+def rhs_ip_rparen_error(p):                      #ERROR
+    'Rhs : INPUT LPAREN'
+    print "Missing \")\" after keyword \"input\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
+
 
 def p_ae_binaryop(p):
     '''AE : AE PLUS AE
@@ -148,6 +182,11 @@ def p_ae_binaryop(p):
     p[0] = Node("binop",[p[1],p[3]],p[2])
 
 
+def p_ae_binop_error(p):                        #ERROR
+    'AE : AE AE '
+    print "Expecting an operator in line: " + str(p.lineno(1))
+    sys.exit(-1)
+
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
     p[0] = Node("unop",[p[2]],"UMINUS")
@@ -160,6 +199,17 @@ def p_ae_unop(p):
 def p_ae_parentheses(p):
     ' AE : LPAREN AE RPAREN'
     p[0] = p[2]
+
+def p_ae_lparen_error(p):
+    ' AE : AE RPAREN'
+    print "Syntax error: Missing \"(\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
+
+def p_ae_rparen_error(p):
+    ' AE : LPAREN AE'
+    print "Syntax error: Missing \")\" in line: " + str(p.lineno(1))
+    sys.exit(-1)
+
 
 def p_ae_intconst(p):
     ' AE : NUMBER'

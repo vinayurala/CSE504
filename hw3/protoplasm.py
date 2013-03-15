@@ -1,7 +1,7 @@
 import sys
 from ply.yacc import *
 from parser import *
-from gencode import blocks,gencode
+from gencode import *
 #from liveness import *
 
 if (len(sys.argv) != 2):
@@ -18,4 +18,4 @@ except IOError:
 #wellformed(astRoot)
 print "AST wellformed"
 gencode_blocks = gencode(astRoot)
-(inSets, outSets) = livenessanalysis(gencode_blocks)
+#(inSets, outSets) = livenessanalysis(gencode_blocks)

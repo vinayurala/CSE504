@@ -32,7 +32,7 @@ def parseBlocks(blocks):
                 (lhsVar, _ , rhsVars) = expr.split("=", 3)
                 defSet.add(lhsVar)
                 for var in rhsVars:
-                    if not var in:
+                    if not var in operators:
                         useSet.add(var)
             else "print" in expr:
                   tList = tokenize.generate_tokens(cStringIO.StringIO(line).readline)
