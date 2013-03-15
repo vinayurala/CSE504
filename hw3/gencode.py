@@ -149,8 +149,7 @@ def merge_blks(blk):
     final_blk = list()
     tblk = list()
 
-    final_blk.append(blk[0])
-    t = 1
+    t = 0
     while t in range(len(blk)):
         flag = 1
         for expr in blk[t]:
@@ -166,8 +165,11 @@ def merge_blks(blk):
             tblk += blk[t]
     
         t += 1
+
+    if tblk:
+        final_blk.append(tblk)
             
-    print "Merged blocks:"
+    print "Code blocks:"
     for t in final_blk:
         print t
     return final_blk
