@@ -7,6 +7,7 @@ b= 2+-4;
 c= b+2;
 s=3;
 if (b < 3) then {
+   // Comment 1
    c = a * 2;
 }
 else {

@@ -1,5 +1,5 @@
 # Yacc example
-import pydot
+#import pydot
 
 import ply.yacc as yacc
 
@@ -31,9 +31,6 @@ class Node:
             self.children = [ ]
         self.leaf = leaf
       
-
-
-
 """
 def graph(node):
     edges = descend(node)
@@ -95,6 +92,10 @@ def p_no_rhs_error(p):                            #ERROR
     print "Expected an expression or number after \"=\" in line: " + str(p.lineno(1))
     sys.exit(-1)
 
+def p_missing_eq_error(p):                        #ERROR
+    'Assign : ID Rhs SCOLON'
+    print "\"=\" missing in assignment statement in line: " + str(p.lineno(1))
+
 def p_print_ae(p):
     ' Print : PRINT LPAREN AE RPAREN SCOLON'  # Only one child for print
     p[5] = Node("SEMI", leaf = p[5])
@@ -122,8 +123,6 @@ def p_block_stmtseq(p):
     p[3] = Node("RCURLY",leaf = p[3])
     p[0] = Node("block",children = [p[1],p[2],p[3]])
 
-
-        
 def p_if(p):
     '''If : IF AE THEN Stmt
            | IF AE THEN Stmt ELSE Stmt'''
@@ -230,26 +229,8 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-
-"""
-s = ''' {if(3-4) then 
-            {if(a==5)
-            then a=5;}}
-{b= 2+-4;}
-c= b+2;
-{s=3;}
-print (c);'''
-"""
-#result = parser.parse(s)
-
-
-
-
 global_defined_var = []
 found_in_loop = []
-
-
-
 
 '''def wellformed(node,inside):
     global found_in_loop
@@ -303,8 +284,15 @@ found_in_loop = []
     return
 '''
 
-
-
 # wellformed(result)
 
 
+if __name__ == "__main__":
+    s = ''' {if(3-4) then 
+            {if(a==5)
+            then a=5;}}
+            {b= 2+-4;}
+            c= b+2;
+            {s=3;}
+            print (c);'''
+    result = parser.parse(s)
