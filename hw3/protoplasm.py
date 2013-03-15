@@ -1,7 +1,8 @@
 import sys
 from ply.yacc import *
 from parser import *
-from gencode import *
+from gencode import blocks,gencode
+#from liveness import *
 
 if (len(sys.argv) != 2):
     print "Usage: python " + sys.argv[0] + " <Protofilename>"
@@ -14,6 +15,7 @@ except IOError:
     print "File " + sys.argv[1] + " not found!!"
     sys.exit(-1)
 
-wellformed(astRoot)
+#wellformed(astRoot)
 print "AST wellformed"
-gencode(astRoot)
+gencode_blocks = gencode(astRoot)
+(inSets, outSets) = livenessanalysis(gencode_blocks)

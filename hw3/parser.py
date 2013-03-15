@@ -30,6 +30,7 @@ class Node:
         else:
             self.children = [ ]
         self.leaf = leaf
+      
 
 
 
@@ -84,10 +85,23 @@ def p_assign_rhs(p):
     p[4] = Node("SEMI", leaf = p[4])
     p[0] = Node("eq",[p[1],p[3], p[4]],p[2])
 
+def p_assign_rhs_error(p):                        #ERROR
+    ' Assign : ID EQ Rhs'
+    print "Syntax error :: Semicolon Missing in Line number %d"% (p.lineno(1))
+    sys.exit()
+
 def p_print_ae(p):
     ' Print : PRINT LPAREN AE RPAREN SCOLON'  # Only one child for print
     p[5] = Node("SEMI", leaf = p[5])
     p[0] = Node("print",[p[3], p[5]],p[1])
+
+
+
+def p_print_ae_error(p):                    #ERROR
+    ' Print : PRINT LPAREN AE RPAREN '
+    print "Syntax error :: Semicolon Missing in Line number %d"% (p.lineno(1))
+    sys.exit()
+
 
 def p_block_stmtseq(p):
     'Block : LCURLY Stmtseq RCURLY'
@@ -95,11 +109,15 @@ def p_block_stmtseq(p):
     p[3] = Node("RCURLY",leaf = p[3])
     p[0] = Node("block",children = [p[1],p[2],p[3]])
 
+
+        
 def p_if(p):
-    'If : IF AE THEN Stmt'                                          # No Else
-    p[0] = Node("if",[p[2],p[4]],p[1])
-        # else:
-#p[0] = Node("if",[p[2],p[4],p[6]],p[1])
+    '''If : IF AE THEN Stmt
+           | IF AE THEN Stmt ELSE Stmt'''
+    if len(p) == 5:
+        p[0] = Node("if",[p[2],p[4]],p[1])
+    else:
+        p[0] = Node("if",[p[2],p[4],p[6]],p[1])
 
 def p_while(p):
     'While : WHILE AE DO Stmt'
@@ -129,6 +147,7 @@ def p_ae_binaryop(p):
           | AE GTEQ AE'''
     p[0] = Node("binop",[p[1],p[3]],p[2])
 
+
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
     p[0] = Node("unop",[p[2]],"UMINUS")
@@ -152,11 +171,15 @@ def p_ae_id(p):
 
 
 def p_error(p):
-	#print "Syntax error in line number XXX (need to figure this out)"
-    print "Illegal character: " + str(p.value[0])
-    sys.exit()
+    if p==None:
+       print "Syntax error found at 'End Of File' Probably because of missing right curly brace"
+       sys.exit()
+    else :
+        print "Syntax error in line number %d just before token '%s' of value '%s' " % (p.lineno,p.type,p.value)
+	sys.exit()
 
 parser = yacc.yacc()
+
 
 """
 s = ''' {if(3-4) then 
@@ -168,25 +191,29 @@ c= b+2;
 print (c);'''
 """
 #result = parser.parse(s)
-# graph(result)
+
+
 
 
 global_defined_var = []
 found_in_loop = []
-inside = 0
 
 
-def wellformed(node):
+
+
+'''def wellformed(node,inside):
     global found_in_loop
     global inside
     global global_defined_var
     iterable_list = node.children[:]
     if node.type == "eq":
-        if inside == 0:
+        print "1"
+        if inside == False:
             lhs_var = node.children[0].leaf
             if lhs_var in global_defined_var:
                 pass
             else:
+                print lhs_var
                 global_defined_var.append(lhs_var)
         else:
             lhs_var = node.children[0].leaf
@@ -196,14 +223,18 @@ def wellformed(node):
                 found_in_loop.append(lhs_var)
         iterable_list = node.children[1:]
     elif(node.type == "if") or (node.type == "while"):
+            print "2"
+            iterable_list2 = node.children[:]
             inside = 1
-            node1 = node.children[1]
-            wellformed(node1)
+            print "here"
+            for child in iterable_list2:
+                wellformed(child,True)
+            print "out"
             inside = 0
             for var in found_in_loop:
                 if var in global_defined_var:
                     found_in_loop.remove(var)
-#return
+            return
     elif node.type == "ID":
         var = node.leaf
         #print var
@@ -217,10 +248,13 @@ def wellformed(node):
                 print "ERROR: Variable \"" + var + "\" not defined in every path"
                 sys.exit(-1)
     for child in iterable_list:
-        wellformed(child)
+        wellformed(child,False)
     
     return
+'''
+
 
 
 # wellformed(result)
+
 

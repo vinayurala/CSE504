@@ -1,4 +1,5 @@
 import sys
+import re
 
 from parser import *
 
@@ -43,7 +44,7 @@ def genSimExpr(expr, tempIdx):
     expr = expr[::-1]
     line = str()                
     blk = list()
-    blk_list = list()
+    label_appended = 0
     if_line = str()
     for t in expr:
         if t == "{":
@@ -102,6 +103,10 @@ def genSimExpr(expr, tempIdx):
 
     blk = line.split("\n")
     blk = filter(None, blk)
+    nested_blks = list()
+    tlist1 = list()
+    tlist2 = list()
+
     if "if" in line and not "while" in expr:
         blk = blk[::-1]
         if_indices = [blk.index(s) for s in blk if (s.startswith("if") and s.find("goto") == -1)]
@@ -122,20 +127,54 @@ def genSimExpr(expr, tempIdx):
                 tStr2 = "goto label" + str(labelID)
                 blk.insert(t, tStr1 + condn_str + " " + tStr2)
                 blk[max(brace_idx) + 1] = "label" + str(labelID) + ":" 
+                tlist2.append(max(brace_idx)+1)
                 del brace_idx[-1]
                 labelID += 1
                 t += 2
+                tlist1.append(t)
             else:
                 t += 1
-        
+
+    while tlist1:
+        del nested_blks[:]
+        nested_blks = blk[max(tlist1):(min(tlist2)+1)]
+        del blk[max(tlist1):min(tlist2)+1]
+        blk.insert(max(tlist1), nested_blks[:])
+        tlist1.remove(max(tlist1))
+        tlist2.remove(min(tlist2))
+            
     return (blk, tempIdx)
+
+def merge_blks(blk):
+    final_blk = list()
+    tblk = list()
+
+    final_blk.append(blk[0])
+    t = 1
+    while t in range(len(blk)):
+        flag = 1
+        for expr in blk[t]:
+            if re.search(r"\bif\b", expr):
+                if tblk:
+                    final_blk.append(tblk[:])
+                    del tblk[:]
+                final_blk.append(blk[t])
+                flag = 0
+                break;
+                
+        if flag:
+            tblk += blk[t]
+    
+        t += 1
+            
+    print "Merged blocks:"
+    for t in final_blk:
+        print t
+    return final_blk
 
 def gencode(astRoot):
     tIdx = 1
     parsetree(astRoot)
-    for blks in blocks:
-        print blks
-
     ic_lines = list()
     tempStack = list()
     nestedBlks = list()
@@ -144,12 +183,8 @@ def gencode(astRoot):
         (simExpr, tIdx) = genSimExpr(blk, tIdx)
         ic_lines.append(simExpr)
 
-    print "Blocks: "
-    for lines in ic_lines:
-        print lines
-
-    return blocks
-
+    final_blks = merge_blks(ic_lines)
+    return final_blks
 
 if __name__ == "__main__":
     gencode(blocks)

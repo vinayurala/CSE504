@@ -53,7 +53,7 @@ t_LPAREN  = r'\('
 t_RPAREN  = r'\)'
 t_LCURLY  = r'\{'
 t_RCURLY  = r'\}'
-t_SCOLON = r';'
+t_SCOLON  = r';'
 t_MOD     = r'%'
 t_AND     = r'&&'
 t_OR      = r'\|\|'
@@ -79,6 +79,7 @@ def t_NUMBER(t):
 def t_COMMENT(t):
     r'\/\/.*'
     pass
+
 # Define a rule so we can track line numbers
 def t_newline(t):
     r'\n+'
@@ -89,7 +90,7 @@ t_ignore  = ' \t'
 
 # Error handling rule
 def t_error(t):
-    print "Illegal character '%s'" % t.value[0]
+    print "Illegal character '%s' " % (t.value[0])             #Should we exit here?
     t.lexer.skip(1)
 
 # Build the lexer
