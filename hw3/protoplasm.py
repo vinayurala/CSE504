@@ -15,7 +15,7 @@ except IOError:
     print "File " + sys.argv[1] + " not found!!"
     sys.exit(-1)
 
-#wellformed(astRoot)
+wellformed(astRoot)
 print "AST wellformed"
 gencode_blocks = gencode(astRoot)
 #(inSets, outSets) = livenessanalysis(gencode_blocks)

@@ -3,4 +3,3 @@ a = input();
 b = 2;
 a = (b + 5);
 // Comment 2
-a = b + c * 5;

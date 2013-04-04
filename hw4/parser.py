@@ -10,16 +10,13 @@ from lexer import tokens
 
 precedence = (('left', 'OR'),
               ('left', 'AND'),
-              ('nonassoc', 'EQUALS', 'NOTEQ', 'LTEQ','LT', 'GT','GTEQ'),
+              ('nonassoc', 'EQUALS', 'NOTEQ'),
+              ('nonassoc', 'LTEQ','LT', 'GT','GTEQ'),
               ('left', 'PLUS', 'MINUS'),
               ('left', 'TIMES', 'DIVIDE', 'MOD'),
               ('right', 'NOT'),
               ('right', 'UMINUS'),
               )
-
-
-#binop_list = ["+","-","*","/","%","||","&&","==","!=","<","<=",">",">="]
-#unop_list = ["-","!"]
 
 
 class Node:
@@ -51,120 +48,128 @@ def descend(node):
     return edges
 """
 
-
-
 ##################
 def p_pgm_stmtseq(p):
-    'Pgm : Stmtseq '
-    p[0] = p[1]
+    'Pgm : DeclSeq StmtSeq '
+    p[0] = Node("Pgm", children = [p[1], p[2]])
 
-
-def p_stmtseq_stmt(p):
-    'Stmtseq : Stmt'
-    p[0] = p[1]
 
 def p_stmtseq_stmt_stmtseq(p):
-    'Stmtseq : Stmt Stmtseq'
+    'StmtSeq : Stmt StmtSeq'
     p[0] = Node("stmtseq",children = [p[1],p[2]])
 
+def p_stmtseq_null(p):
+    'StmtSeq : '
+    p[0] = Node("stmtseq", [])
 
-def p_stmt_assign(p):
-    '''Stmt : Assign
-            | Print
-            | If
-            | While
-            | Block''' 
-    p[0] = p[1]
+def p_stmt(p):
+    '''Stmt : SE SCOLON
+       Stmt : PRINT LPAREN AE RPAREN SCOLON
+       Stmt : LCURLY DeclSeq StmtSeq RCURLY
+       Stmt : IF AE THEN Stmt ELSE Stmt
+       Stmt : IF AE THEN Stmt
+       Stmt : WHILE AE DO Stmt
+       Stmt : FOR LPAREN SEOpt SCOLON AEOpt SCOLON SEOpt RPAREN Stmt
+       Stmt : DO Stmt WHILE AE SCOLON'''
+    if len(p) == 3:
+        p[0] = Node("Stmt", children = [p[1], p[2]])
+    elif len(p) == 5:
+        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4]])
+    elif len(p) == 6:
+        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4], p[5]])
+    elif len(p) == 7:
+        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4], p[5], p[6]])
+    elif len(p) == 10:
+        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9]])
 
-def p_assign_rhs(p):
-    ' Assign : ID EQ Rhs SCOLON'
-    p[1] = Node("ID",leaf = p[1])
-    p[4] = Node("SEMI", leaf = p[4])
-    p[0] = Node("eq",[p[1],p[3], p[4]],p[2])
-
-def p_assign_rhs_error(p):                        #ERROR
-    ' Assign : ID EQ Rhs'
-    print "Syntax error :: Semicolon Missing in Line number %d"% (p.lineno(1))
-    sys.exit()
-
-def p_no_rhs_error(p):                            #ERROR
-    'Assign : ID EQ SCOLON'
-    print "Expected an expression or number after \"=\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
-
-def p_missing_eq_error(p):                        #ERROR
-    'Assign : ID Rhs SCOLON'
-    print "\"=\" missing in assignment statement in line: " + str(p.lineno(1))
-
-def p_print_ae(p):
-    ' Print : PRINT LPAREN AE RPAREN SCOLON'  # Only one child for print
-    p[5] = Node("SEMI", leaf = p[5])
-    p[0] = Node("print",[p[3], p[5]],p[1])
-
-
-def p_print_ae_error(p):                          #ERROR
-    ' Print : PRINT LPAREN AE RPAREN '
-    print "Syntax error :: Semicolon Missing in Line number %d"% (p.lineno(1))
-    sys.exit()
-
-def p_lparen_error(p):                            #ERROR
-    'Print : PRINT AE RPAREN SCOLON'
-    print "Synatx error: Missing \"(\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
-    
-def p_rparen_error(p):                            #ERROR
-    'Print : PRINT LPAREN AE SCOLON'
-    print "Synatx error: Missing \")\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
-
-def p_block_stmtseq(p):
-    'Block : LCURLY Stmtseq RCURLY'
-    p[1] = Node("LCURLY",leaf = p[1])
-    p[3] = Node("RCURLY",leaf = p[3])
-    p[0] = Node("block",children = [p[1],p[2],p[3]])
-
-def p_if(p):
-    '''If : IF AE THEN Stmt
-           | IF AE THEN Stmt ELSE Stmt'''
-    if len(p) == 5:
-        p[0] = Node("if",[p[2],p[4]],p[1])
+def p_seopt(p):
+    '''SEOpt : SE
+       SEOpt : '''
+    if len(p) == 1:
+        p[0] = Node("SEOpt", [])
     else:
-        p[0] = Node("if",[p[2],p[4],p[6]],p[1])
+        p[0] = Node("SEOpt", p[1])
+"""
+def p_seopt_null(p):
+    'SEOpt : '
+    p[0] = Node("SEOpt", [])
+"""
 
-def p_if_error(p):                               #ERROR
-    'If : IF AE Stmt'
-    print "Missing keyword \"then\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
-
-def p_while(p):
-    'While : WHILE AE DO Stmt'
-    p[0] = Node("while",[p[2],p[4]],p[1])
-
-def p_while_error(p):                            #ERROR
-    'While : WHILE AE Stmt'
-    print "Missing keyword \"do\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
-
-def p_rhs(p):
-    '''Rhs : AE
-           | INPUT LPAREN RPAREN'''
-    if len(p)>2:
-        p[0] = Node("input",leaf = p[1])
+def p_aeopt(p):
+    '''AEOpt : AE
+       AEOpt : '''
+    if len(p) == 1:
+        p[0] = Node("AEOpt", [])
     else:
-        p[0] = p[1]
+        p[0] = Node("AEOpt", p[1])
+"""
+def p_aeopt_null(p):
+    'AEOpt : '
+    p[0] = Node("AEOpt", [])
+"""
 
-def rhs_ip_lparen_error(p):                      #ERROR
-    'Rhs : INPUT RPAREN'
-    print "Missing \"(\" after keyword \"input\" in line: " + str(p.lineno(1))
-    sys.exit(-1) 
+def p_declseq(p):
+    'DeclSeq : Decl DeclSeq'
+    p[0] = Node("DeclSeq", children = [p[1], p[2]])
 
-def rhs_ip_rparen_error(p):                      #ERROR
-    'Rhs : INPUT LPAREN'
-    print "Missing \")\" after keyword \"input\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
+def p_declseq_null(p):
+    'DeclSeq : '
+    p[0] = Node("DeclSeq", [])
+
+def p_decl(p):
+    'Decl : Type VarList SCOLON'
+    p[0] = Node("Decl", children = [p[1], p[2], p[3]])
+
+def p_type(p):
+    '''Type : INT
+          | BOOL'''
+    p[0] = Node("Type", p[1])
+
+def p_varlist(p):
+    '''VarList : Var COMMA VarList
+       VarList : Var'''
+    if len(p) == 2:
+        p[0] = Node("VarList", p[1])
+    elif len(p) == 4:
+        p[0] = Node("VarList", p[1])
+
+def p_var(p):
+    'Var : ID DimStar'
+    p[0] = Node("Var", children = [p[0], p[1]])
+
+def p_se(p):
+    '''SE : Lhs EQ AE
+       SE : Lhs INC
+       SE : Lhs DEC
+       SE : INC Lhs
+       SE : DEC Lhs '''
+    if len(p) == 3:
+        p[0] = Node("SE", children = [p[1], p[2]])
+    elif len(p) == 4:
+        p[0] = Node("SE", children = [p[1], p[2], p[3]])
+
+def p_lhs(p):
+    '''Lhs : ID
+           | Lhs LSQR AE RSQR'''
+    if len(p) == 2:
+        p[0] = Node("Lhs", p[1])
+    elif len(p) == 5:
+        p[0] = Node("Lhs", children = [p[1], p[2], p[3], p[4]])         
+     
+def p_dimexpr(p):
+    'DimExpr : LSQR AE RSQR'
+    p[0] = Node("DimExpr", children = [p[0], p[1], p[2]])
+
+def p_dimstar(p):
+    '''DimStar : LSQR RSQR DimStar
+       DimStar : '''
+    if len(p) == 1:
+        p[0] = Node("DimStar", [])
+    elif len(p) == 3:
+        p[0] = Node("DimStar", children = [p[0], p[1], p[2]])
 
 
-def p_ae_binaryop(p):
+def p_ae_binop(p):
     '''AE : AE PLUS AE
           | AE MINUS AE
           | AE TIMES AE
@@ -175,49 +180,44 @@ def p_ae_binaryop(p):
           | AE EQUALS AE
           | AE NOTEQ AE
           | AE LT AE
-          | AE LTEQ AE
           | AE GT AE
-          | AE GTEQ AE'''
-    p[0] = Node("binop",[p[1],p[3]],p[2])
-
-
-def p_ae_binop_error(p):                        #ERROR
-    'AE : AE AE '
-    print "Expecting an operator in line: " + str(p.lineno(1))
-    sys.exit(-1)
+          | AE GTEQ AE
+          | AE LTEQ AE '''
+    p[0] = Node("Binop", [p[1], p[3]], p[2])
 
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
-    p[0] = Node("unop",[p[2]],"UMINUS")
+    p[0] = Node("Unop", p[2], "UMINUS")
 
+def p_ae_not(p):
+    'AE : NOT AE'
+    p[0] = Node("Unop", p[2], "NOT")
 
-def p_ae_unop(p):
-    ' AE : NOT AE'
-    p[0] = Node("unop",[p[2]],"NOT")
+def p_ae_lhs(p):
+    'AE : Lhs'
+    p[0] = p[1]
 
-def p_ae_parentheses(p):
-    ' AE : LPAREN AE RPAREN'
-    p[0] = p[2]
+def p_ae_se(p):
+    'AE : SE'
+    p[0] = p[1]
 
-def p_ae_lparen_error(p):
-    ' AE : AE RPAREN'
-    print "Syntax error: Missing \"(\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
+def p_ae_ip(p):
+    'AE : INPUT LPAREN RPAREN'
+    p[0] = Node("AE", children = [p[1], p[2], p[3]])
 
-def p_ae_rparen_error(p):
-    ' AE : LPAREN AE'
-    print "Syntax error: Missing \")\" in line: " + str(p.lineno(1))
-    sys.exit(-1)
+def p_ae_aeparan(p):
+    'AE : LPAREN AE RPAREN'
+    p[0] = Node("AE", children = [p[1], p[2], p[3]])
 
+def p_ae_new_expr(p):
+    'AE : NEW Type DimExpr DimStar'
+    p[0] = Node("AE", children = [p[1], p[2], p[3], p[4]])
 
-def p_ae_intconst(p):
-    ' AE : NUMBER'
-    p[0] = Node("NUMBER",leaf = p[1])
-
-def p_ae_id(p):
-    ' AE : ID'
-    p[0] = Node("ID",leaf = p[1])
-
+def p_ae_misc(p):
+    '''AE : TRUE
+          | FALSE
+          | NUMBER '''
+    p[0] = Node("AE", p[1])
 
 def p_error(p):
     if p==None:
@@ -314,12 +314,18 @@ def wellformed(node):
     return
 
 if __name__ == "__main__":
-    s = ''' {if(3-4) then 
+    s = ''' int a, b, c, d[];
+            d = new int [10];
+            {if(3-4) then 
             {if(a==5)
             then a=5;}}
             {b= 2+-4;}
-            c= b+2;
+            for(a = 0; a < b; a++)
+              b = c + 2;
+            c= ++b + 2;
             {s=3;}
             print (c);'''
     result = parser.parse(s)
-    wellformed(result)
+    astRoot = yacc.parse(s)
+    print 'Done with parsing'
+    #wellformed(result)
