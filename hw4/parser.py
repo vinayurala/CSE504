@@ -72,6 +72,7 @@ def p_stmt(p):
        Stmt : FOR LPAREN SEOpt SCOLON AEOpt SCOLON SEOpt RPAREN Stmt
        Stmt : DO Stmt WHILE AE SCOLON'''
     if len(p) == 3:
+        p[2] = Node("SEMI", leaf = p[2])
         p[0] = Node("Stmt", children = [p[1], p[2]])
     elif len(p) == 5:
         p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4]])
@@ -89,11 +90,6 @@ def p_seopt(p):
         p[0] = Node("SEOpt", [])
     else:
         p[0] = Node("SEOpt", p[1])
-"""
-def p_seopt_null(p):
-    'SEOpt : '
-    p[0] = Node("SEOpt", [])
-"""
 
 def p_aeopt(p):
     '''AEOpt : AE
@@ -102,11 +98,6 @@ def p_aeopt(p):
         p[0] = Node("AEOpt", [])
     else:
         p[0] = Node("AEOpt", p[1])
-"""
-def p_aeopt_null(p):
-    'AEOpt : '
-    p[0] = Node("AEOpt", [])
-"""
 
 def p_declseq(p):
     'DeclSeq : Decl DeclSeq'
@@ -168,7 +159,6 @@ def p_dimstar(p):
     elif len(p) == 3:
         p[0] = Node("DimStar", children = [p[0], p[1], p[2]])
 
-
 def p_ae_binop(p):
     '''AE : AE PLUS AE
           | AE MINUS AE
@@ -187,11 +177,11 @@ def p_ae_binop(p):
 
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
-    p[0] = Node("Unop", p[2], "UMINUS")
+    p[0] = Node("Unop", [p[2]], "UMINUS")
 
 def p_ae_not(p):
     'AE : NOT AE'
-    p[0] = Node("Unop", p[2], "NOT")
+    p[0] = Node("Unop", [p[2]], "NOT")
 
 def p_ae_lhs(p):
     'AE : Lhs'
@@ -328,4 +318,4 @@ if __name__ == "__main__":
     result = parser.parse(s)
     astRoot = yacc.parse(s)
     print 'Done with parsing'
-    #wellformed(result)
+    wellformed(result)
