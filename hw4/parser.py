@@ -65,7 +65,6 @@ def p_stmtseq_null(p):
 def p_stmt(p):
     '''Stmt : SE SCOLON
        Stmt : PRINT LPAREN AE RPAREN SCOLON
-       Stmt : LCURLY DeclSeq StmtSeq RCURLY
        Stmt : IF AE THEN Stmt ELSE Stmt
        Stmt : IF AE THEN Stmt
        Stmt : WHILE AE DO Stmt
@@ -75,13 +74,27 @@ def p_stmt(p):
         p[2] = Node("SEMI", leaf = p[2])
         p[0] = Node("Stmt", children = [p[1], p[2]])
     elif len(p) == 5:
-        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4]])
+        if ("if" in p):
+            p[0] = Node("if", [p[2], p[4]], p[1])
+        else:
+            p[0] = Node("while", [p[2], p[4]], p[1])
     elif len(p) == 6:
-        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4], p[5]])
+        p[5] = Node("SEMI", leaf = p[5])
+        if "while" in p:
+            p[0] = Node("while", [p[1], p[2], p[3], p[4], p[5]], p[3])
     elif len(p) == 7:
-        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4], p[5], p[6]])
+        p[0] = Node("if", [p[2], p[4], p[6]], p[1])
     elif len(p) == 10:
-        p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9]])
+        p[4] = Node("SEMI", leaf = p[4])        
+        p[6] = Node("SEMI", leaf = p[6])        
+        p[0] = Node("for", [p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9]], p[1])
+
+
+def p_stmt_curly(p):
+    'Stmt : LCURLY DeclSeq StmtSeq RCURLY'
+    p[1] = Node("LCURLY", leaf = p[1])
+    p[4] = Node("RCURLY", leaf = p[4])
+    p[0] = Node("Stmt", [p[1], p[2], p[3], p[4]])
 
 def p_seopt(p):
     '''SEOpt : SE
@@ -109,12 +122,13 @@ def p_declseq_null(p):
 
 def p_decl(p):
     'Decl : Type VarList SCOLON'
+    p[3] = Node("SEMI", leaf = p[3])
     p[0] = Node("Decl", children = [p[1], p[2], p[3]])
 
 def p_type(p):
     '''Type : INT
-          | BOOL'''
-    p[0] = Node("Type", p[1])
+            | BOOL'''
+    p[0] = Node("Type", leaf = p[1])
 
 def p_varlist(p):
     '''VarList : Var COMMA VarList
@@ -122,10 +136,12 @@ def p_varlist(p):
     if len(p) == 2:
         p[0] = Node("VarList", p[1])
     elif len(p) == 4:
-        p[0] = Node("VarList", p[1])
+        p[2] = Node("COMMA", leaf = p[2])
+        p[0] = Node("VarList", children = [p[1], p[2], p[3]])
 
 def p_var(p):
     'Var : ID DimStar'
+    p[1] = Node("ID", leaf = p[1])
     p[0] = Node("Var", children = [p[0], p[1]])
 
 def p_se(p):
@@ -143,12 +159,16 @@ def p_lhs(p):
     '''Lhs : ID
            | Lhs LSQR AE RSQR'''
     if len(p) == 2:
-        p[0] = Node("Lhs", p[1])
+        p[0] = Node("ID", leaf = p[1])
     elif len(p) == 5:
+        p[2] = Node("LSQR", leaf = p[2])
+        p[4] = Node("RSQR", leaf = p[4])
         p[0] = Node("Lhs", children = [p[1], p[2], p[3], p[4]])         
      
 def p_dimexpr(p):
     'DimExpr : LSQR AE RSQR'
+    p[1] = Node("LSQR", leaf = p[1])
+    p[3] = Node("RSQR", leaf = p[3])
     p[0] = Node("DimExpr", children = [p[0], p[1], p[2]])
 
 def p_dimstar(p):
@@ -157,6 +177,8 @@ def p_dimstar(p):
     if len(p) == 1:
         p[0] = Node("DimStar", [])
     elif len(p) == 3:
+        p[1] = Node("LSQR", leaf = p[1])
+        p[2] = Node("RSQR", leaf = p[2])
         p[0] = Node("DimStar", children = [p[0], p[1], p[2]])
 
 def p_ae_binop(p):
@@ -193,11 +215,11 @@ def p_ae_se(p):
 
 def p_ae_ip(p):
     'AE : INPUT LPAREN RPAREN'
-    p[0] = Node("AE", children = [p[1], p[2], p[3]])
+    p[0] = Node("AE", children = [p[1]])
 
 def p_ae_aeparan(p):
     'AE : LPAREN AE RPAREN'
-    p[0] = Node("AE", children = [p[1], p[2], p[3]])
+    p[0] = Node("AE", children = [p[2]])
 
 def p_ae_new_expr(p):
     'AE : NEW Type DimExpr DimStar'
@@ -207,7 +229,7 @@ def p_ae_misc(p):
     '''AE : TRUE
           | FALSE
           | NUMBER '''
-    p[0] = Node("AE", p[1])
+    p[0] = Node("AE", leaf = p[1])
 
 def p_error(p):
     if p==None:
@@ -218,6 +240,8 @@ def p_error(p):
 	sys.exit()
 
 parser = yacc.yacc()
+
+global_defined_var = list()
 
 def inside_loop(node):
     left_list = []
@@ -278,6 +302,7 @@ def wellformed(node):
     list = []
     
     iterable_list = node.children[:]
+    print node.type
     if(node.type == "if") or (node.type == "while"):
         list = inside_loop(node)
         if(node.type == "if"):
@@ -303,15 +328,15 @@ def wellformed(node):
     
     return
 
+def var_declared (node):
+    return
+
 if __name__ == "__main__":
-    s = ''' int a, b, c, d[];
-            d = new int [10];
+    s = ''' a = 2;
             {if(3-4) then 
             {if(a==5)
             then a=5;}}
             {b= 2+-4;}
-            for(a = 0; a < b; a++)
-              b = c + 2;
             c= ++b + 2;
             {s=3;}
             print (c);'''
