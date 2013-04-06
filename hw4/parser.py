@@ -56,11 +56,11 @@ def p_pgm_stmtseq(p):
 
 def p_stmtseq_stmt_stmtseq(p):
     'StmtSeq : Stmt StmtSeq'
-    p[0] = Node("stmtseq",children = [p[1],p[2]])
+    p[0] = Node("StmtSeq",children = [p[1],p[2]])
 
 def p_stmtseq_null(p):
     'StmtSeq : '
-    p[0] = Node("stmtseq", [])
+    p[0] = Node("StmtSeq", [])
 
 def p_stmt(p):
     '''Stmt : SE SCOLON
@@ -81,13 +81,13 @@ def p_stmt(p):
     elif len(p) == 6:
         p[5] = Node("SEMI", leaf = p[5])
         if "while" in p:
-            p[0] = Node("while", [p[1], p[2], p[3], p[4], p[5]], p[3])
+            p[0] = Node("while", [p[2], p[3], p[5]], p[1])
     elif len(p) == 7:
         p[0] = Node("if", [p[2], p[4], p[6]], p[1])
     elif len(p) == 10:
         p[4] = Node("SEMI", leaf = p[4])        
         p[6] = Node("SEMI", leaf = p[6])        
-        p[0] = Node("for", [p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9]], p[1])
+        p[0] = Node("for", [p[3], p[4], p[5], p[6], p[7], p[9]], p[1])
 
 
 def p_stmt_curly(p):
@@ -145,15 +145,21 @@ def p_var(p):
     p[0] = Node("Var", children = [p[0], p[1]])
 
 def p_se(p):
-    '''SE : Lhs EQ AE
-       SE : Lhs INC
-       SE : Lhs DEC
-       SE : INC Lhs
-       SE : DEC Lhs '''
-    if len(p) == 3:
-        p[0] = Node("SE", children = [p[1], p[2]])
-    elif len(p) == 4:
-        p[0] = Node("SE", children = [p[1], p[2], p[3]])
+    'SE : Lhs EQ AE'
+    p[2] = Node("EQ", leaf  = p[2])
+    p[0] = Node("SEEq", children = [p[1], p[2], p[3]])
+
+def p_se_post(p):
+    '''SE : Lhs INC
+          | Lhs DEC'''
+    p[2] = Node("POST", leaf = p[2])
+    p[0] = Node("SEPost", children = [p[1], p[2]])
+
+def p_se_pre(p):
+    '''SE : INC Lhs
+          | DEC Lhs '''
+    p[1] = Node("Pre", leaf = p[1])
+    p[0] = Node("SEPre", children = [p[1], p[2]])
 
 def p_lhs(p):
     '''Lhs : ID
@@ -215,7 +221,7 @@ def p_ae_se(p):
 
 def p_ae_ip(p):
     'AE : INPUT LPAREN RPAREN'
-    p[0] = Node("AE", children = [p[1]])
+    p[0] = Node("Input", leaf = p[1])
 
 def p_ae_aeparan(p):
     'AE : LPAREN AE RPAREN'
@@ -229,7 +235,7 @@ def p_ae_misc(p):
     '''AE : TRUE
           | FALSE
           | NUMBER '''
-    p[0] = Node("AE", leaf = p[1])
+    p[0] = Node("IntConst", leaf = p[1])
 
 def p_error(p):
     if p==None:
@@ -332,7 +338,9 @@ def var_declared (node):
     return
 
 if __name__ == "__main__":
-    s = ''' a = 2;
+    s = ''' int a, b, c, d[];
+            d = new int [10];
+             a = 2;
             {if(3-4) then 
             {if(a==5)
             then a=5;}}
@@ -343,4 +351,4 @@ if __name__ == "__main__":
     result = parser.parse(s)
     astRoot = yacc.parse(s)
     print 'Done with parsing'
-    wellformed(result)
+   # wellformed(result)
