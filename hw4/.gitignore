@@ -1,4 +1,4 @@
 *.pyc
 *.out
 parsetab.py
-*.old
+*.old*
