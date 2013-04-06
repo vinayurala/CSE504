@@ -65,17 +65,17 @@ def gencode(node):
 
     blk1 = list()
     blk2 = list()
+    blk3 = list()
+    blk4 = list()
 
     if node.type is "if":
         blk_str = ae_extractor(node.children[0])
         blk1.append(blk_str)
-        label_str = "if not" + tVar + str(tID - 1) + " goto label " + str(labelID + 1) + "\n"
+        label_str = "if not " + tVar + str(tID - 1) + " goto label " + str(labelID + 1) + "\n"
         temp_blk.append(label_str)
         label_str = "label " + str(labelID) + ":\n"
         labelID += 1
-        temp_blk.append(blk1[:])
         blk2 = gencode(node.children[1])
-        temp_blk.append(blk2[:])
         label_str = "label " + str(labelID) + ":\n"
         temp_blk.append(label_str)
         
@@ -83,31 +83,25 @@ def gencode(node):
         blk_str = ae_extractor(node.children[0])
         blk1.append(blk_str)
         label_str = "if " + tVar + str(tID - 1) + "goto label " + str(labelID + 1) + "\n"
-        temp_blk.append(blk1[:])
         blk2 = gencode(node.children[1])
-        temp_blk.append(blk2[:])
         labelID += 1
 
     elif node.type is "for":
         blk1 = se_extractor(node.children[0])
-        temp_blk.append(blk1[:])        
         blk2 = gencode(node.children[5])
-        temp_blk.append(blk2[:])
         blk_str = ae_extractor(node.children[2])
         del blk1[:]
         blk1.append(blk_str)
         blk1 = se_extractor(node.children[4])
-        temp_blk.append(blk1[:])
                 
     elif node.type is "else":
         label_str = "label " + str(labelID) + ":\n"
         labelID += 1
         for child in node.children[:]:
             blk2 = gencode(child)
-        temp_blk.append(blk2[:])
 
     elif node.type is "Binop":
-        if node.children[0].type is "IntConst":
+        if node.children[0].type in ["IntConst", "ID"]:
             blk_str = str(node.children[0].leaf)
             blk_str += str(node.leaf)
             blk_str += str(node.children[1].leaf)
@@ -136,6 +130,9 @@ def gencode(node):
     elif node.type is "Stmt":
         blk1 = gencode(node.children[0])
         blk2 = gencode(node.children[1])
+        if len(node.children) == 4:
+            blk3 = gencode(node.children[2])
+            blk4 = gencode(node.children[3])            
 
     elif node.type is "RCURLY":
         ir_blocks.append(temp_blk[:])
