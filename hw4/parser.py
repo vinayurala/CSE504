@@ -264,12 +264,23 @@ def wellformed(node,decl,defined):
     if(node.type == "if") or (node.type == "while") or (node.type == "for") or (node.type == "do"):
         temp_decl = decl[:]
         temp_defined = defined[:]
-        print decl[:]
+        #print decl[:]
         for child in iterable_list:
             wellformed(child,temp_decl,temp_defined)
-        print decl[:]
+        #print decl[:]
         return
     
+    elif(node.type == "Stmt"):
+        if(node.children[0].type == "LCURLY"):
+            temp_decl = decl[:]
+            temp_defined = defined[:]
+            #print decl[:]
+            for child in iterable_list:
+                wellformed(child,temp_decl,temp_defined)
+            #print decl[:]
+            return
+
+
     
     elif(node.type == "Var"):
         id = node.children[0].leaf
@@ -308,6 +319,8 @@ def wellformed(node,decl,defined):
     return
 
 
+
+
 if __name__ == "__main__":
     s = ''' int a,b;
             b = 4;
@@ -320,16 +333,21 @@ if __name__ == "__main__":
                 int c;
                 c=3;
                 b=6;}
-            //c=3;
+            
             }
-            //c = 3;
-            for (a = 0 ; a < b; a++)
-              b++;
-            do {
-                 a = 2;
-               } while(b > 3);
-'''
+        {
+            int d;
+            d=6;
+        }
+        //d=2;
+        for (a = 1; a < b; a++)
+            b++;
+        do {
+              a++;
+           } while(b > 3);
+            '''
     result = parser.parse(s)
     astRoot = yacc.parse(s)
     print 'Done with parsing'
     wellformed(result,decl,defined)
+    print "Wellformed"
