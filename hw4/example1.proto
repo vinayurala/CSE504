@@ -1,5 +1,7 @@
 int a, b, c, s;
+int e[];
 a = input();
+e = new int[10];
 if(3-4) then { 
 if(a==10) then {
 	  a = 5;}

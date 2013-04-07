@@ -260,9 +260,9 @@ def second_pass(blocks):
     return ir_blocks
 
 def final_codegen(root):
-    block_list = gencode(root)
-    ir_blocks = second_pass(block_list)
-    #ir_blocks = gencode(root)
+    #block_list = gencode(root)
+    #ir_blocks = second_pass(block_list)
+    ir_blocks = gencode(root)
     return ir_blocks
 
 if __name__ == "__main__":
