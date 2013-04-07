@@ -60,7 +60,7 @@ def p_stmtseq_stmt_stmtseq(p):
 
 def p_stmtseq_null(p):
     'StmtSeq : '
-    p[0] = Node("StmtSeq", [])
+    p[0] = Node("StmtSeq")
 
 def p_stmt(p):
     '''Stmt : SE SCOLON
@@ -80,8 +80,8 @@ def p_stmt(p):
             p[0] = Node("while", [p[2], p[4]], p[1])
     elif len(p) == 6:
         p[5] = Node("SEMI", leaf = p[5])
-        if "while" in p:
-            p[0] = Node("while", [p[2], p[3], p[5]], p[1])
+        if p[1] == "do":
+            p[0] = Node("do", [p[2], p[4], p[5]], p[1])
         else:
             p[0] = Node("print", [p[3],p[5]], p[1])
     elif len(p) == 7:
@@ -102,17 +102,17 @@ def p_seopt(p):
     '''SEOpt : SE
         SEOpt : '''
     if len(p) == 1:
-        p[0] = Node("SEOpt", [])
+        p[0] = Node("SEOpt")
     else:
-        p[0] = Node("SEOpt", p[1])
+        p[0] = Node("SEOpt", children = [p[1]])
 
 def p_aeopt(p):
     '''AEOpt : AE
         AEOpt : '''
     if len(p) == 1:
-        p[0] = Node("AEOpt", [])
+        p[0] = Node("AEOpt")
     else:
-        p[0] = Node("AEOpt", children = p[1])
+        p[0] = Node("AEOpt", children = [p[1]])
 
 def p_declseq(p):
     'DeclSeq : Decl DeclSeq'
@@ -211,7 +211,7 @@ def p_ae_uminus(p):
 
 def p_ae_not(p):
     'AE : NOT AE'
-    p[0] = Node("Unop", [p[2]], "NOT")
+    p[0] = Node("Unop", children = [p[2]], leaf = "NOT")
 
 def p_ae_lhs(p):
     'AE : Lhs'
@@ -257,19 +257,45 @@ defined = list()
 
 
 def wellformed(node,decl,defined):
+    #print node
     #print node.type
     iterable_list = node.children[:]
     
     
-    if(node.type == "if") or (node.type == "while") or (node.type == "for") or (node.type == "do"):
+    if(node.type == "if") or (node.type == "while"):
         temp_decl = decl[:]
         temp_defined = defined[:]
         #print decl[:]
         for child in iterable_list:
+            #print child
             wellformed(child,temp_decl,temp_defined)
         #print decl[:]
         return
     
+    elif(node.type == "do"):
+        print "here"
+        temp_decl = decl[:]
+        for child in iterable_list:
+            # print decl[:]
+            wellformed(child,temp_decl,defined)
+        # print defined[:]
+        #print decl[:]
+            #print defined[:]
+        return
+
+    elif(node.type == "for"):
+        if(node.children[0].type == "SEOpt"):
+            wellformed(node.children[0],decl,defined)
+            iterable_list = node.children[1:]
+        temp_decl = decl[:]
+        temp_defined = defined[:]
+        for child in iterable_list:
+            #print child
+            wellformed(child,temp_decl,temp_defined)
+        #print decl[:]
+        return
+
+
     elif(node.type == "Stmt"):
         if(node.children[0].type == "LCURLY"):
             temp_decl = decl[:]
@@ -294,7 +320,7 @@ def wellformed(node,decl,defined):
             sys.exit(-1)
             return []
         elif not id in defined:
-            print "Wellformed ERROR: Variable \"" + id + "\" USED before DEFINED"
+            print "Wellformed ERROR: Variable \"" + id + "\" NOT DEFINED before use"
             sys.exit(-1)
             return []
     
@@ -309,6 +335,7 @@ def wellformed(node,decl,defined):
             pass
         else:
             defined.append(id)
+#print id
         iterable_list = node.children[1:]
     
     
@@ -323,7 +350,10 @@ def wellformed(node,decl,defined):
 
 if __name__ == "__main__":
     s = ''' int a,b;
+            int d,x;
             b = 4;
+        
+        
             if(b==5)
             then
             {
@@ -335,19 +365,34 @@ if __name__ == "__main__":
                 b=6;}
             
             }
-        {
-            int d;
-            d=6;
-        }
-        //d=2;
+        
+       
         for (a = 1; a < b; a++)
+        {
+            int x;
             b++;
+            
+            x=1;
+            x++;
+        
+        }
+        
         do {
-              a++;
-           } while(b > 3);
+        int e;
+        d = 1;
+        //a++;
+        e=1;
+        e++;
+        //l = 3;
+        
+        } while(b > 3);
+       //x++;
+        
+        
+        //dfsdfs
+        d++;
             '''
     result = parser.parse(s)
     astRoot = yacc.parse(s)
     print 'Done with parsing'
     wellformed(result,decl,defined)
-    print "Wellformed"
