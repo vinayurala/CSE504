@@ -19,3 +19,12 @@ while (c < 3) do
    b = b + 2;
    a = a + 3;
 }
+do {
+      a = 3 + a;
+      b = 5 * 2;
+   } while (c < 3);
+
+for (a = 3; a < b; a = a + 2)
+{
+	b = b + 2;
+}
