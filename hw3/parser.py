@@ -229,6 +229,9 @@ def p_error(p):
 
 parser = yacc.yacc()
 
+global_defined_var = list()
+found_in_loop = list()
+
 def inside_loop(node):
     left_list = []
     right_list = []

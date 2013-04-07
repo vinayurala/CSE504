@@ -239,13 +239,30 @@ def get_idx(blocks, brace):
 def second_pass(blocks):
     ir_blocks = list()
     open_brace_list = get_idx(blocks, "{")
-    close_brace_list = get_idx(blocks, "}")
+    #close_brace_list = get_idx(blocks, "}")
 
+    print close_brace_list
 
+    idx = 0
+    new_blk = list()
+    while idx in range(len(blocks)):
+        if "if" in blocks[idx]:
+            new_blk.append(blocks[idx : min(close_brace_list)])
+            idx = min(close_brace_list) + 1
+            close_brace_list.pop(0)
+        else:
+            new_blk.append(blocks[idx])
+            idx += 1
+
+        ir_blocks.append(new_blk[:])
+        del new_blk[:]
+
+    return ir_blocks
 
 def final_codegen(root):
     block_list = gencode(root)
     ir_blocks = second_pass(block_list)
+    #ir_blocks = gencode(root)
     return ir_blocks
 
 if __name__ == "__main__":
