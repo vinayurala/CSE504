@@ -2,3 +2,5 @@
 *.out
 parsetab.py
 *.old*
+../.DS_Store
+../hw3/.DS_Store
