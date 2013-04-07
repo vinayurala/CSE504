@@ -9,6 +9,8 @@ labelID = 1
 
 def ae_extractor(node):
     #blk = list()
+    global tID
+    global tVar
     
     if node.leaf == "input":
         blk_str = node.leaf
@@ -16,6 +18,22 @@ def ae_extractor(node):
     elif node.type is "AE":
         if node.children[0].type is "Binop":
             blk_str = str(gencode(node.children[0]))
+
+    elif node.type in ["IntConst", "ID"]:
+        blk_str = node.leaf
+
+    elif node.type is "Binop":
+        if node.children[1].type is "Binop":
+            
+        
+        blk_str = str(node.children[0].leaf)
+        blk_str += str(node.leaf)
+        if node.children[1].type is "Binop":
+            blk_str += ae_extractor(node.children[1])
+        else:
+            blk_str += str(node.children[1].leaf)
+        blk_str = tVar + str(tID) + " = " + blk_str
+        tID += 1
 
     else:
         blk_str = str(node.children[0].children[0])
@@ -42,9 +60,9 @@ def lhs_extractor(node):
 
 def se_extractor(node):
     if node.type is "SEEq":
-        blk_str = lhs_extractor(node.children[0]) + " "
-        blk_str += node.children[1].leaf + " " 
-        blk_str += ae_extractor(node.children[2])
+        blk_str = str(lhs_extractor(node.children[0])) + " "
+        blk_str += str(node.children[1].leaf) + " " 
+        blk_str += str(ae_extractor(node.children[2]))
         return blk_str
     else:
         if node.type is "SEPre":
@@ -70,14 +88,17 @@ def gencode(node):
 
     if node.type is "if":
         blk_str = ae_extractor(node.children[0])
+        blk_str += "\n"
         blk1.append(blk_str)
         label_str = "if not " + tVar + str(tID - 1) + " goto label " + str(labelID + 1) + "\n"
         temp_blk.append(label_str)
         label_str = "label " + str(labelID) + ":\n"
         labelID += 1
+        temp_blk.append(label_str)
         blk2 = gencode(node.children[1])
         label_str = "label " + str(labelID) + ":\n"
         temp_blk.append(label_str)
+        labelID += 1
         
     elif node.type is "while":             
         blk_str = ae_extractor(node.children[0])
@@ -124,8 +145,9 @@ def gencode(node):
         blk2 = gencode(node.children[1])
 
     elif node.type is "StmtSeq":
-        blk1 = gencode(node.children[0])
-        blk2 = gencode(node.children[1]) 
+        if node.children:
+            blk1 = gencode(node.children[0])
+            blk2 = gencode(node.children[1]) 
 
     elif node.type is "Stmt":
         blk1 = gencode(node.children[0])
@@ -135,18 +157,20 @@ def gencode(node):
             blk4 = gencode(node.children[3])            
 
     elif node.type is "RCURLY":
-        ir_blocks.append(temp_blk[:])
-        del temp_blk[:]
+        temp_blk.append(node.leaf)
+        #ir_blocks.append(temp_blk[:])
+        #del temp_blk[:]
 
     elif node.type is "SEMI":
-        if "{" in temp_blk:
-            return
-        else:
-            ir_blocks.append(temp_blk[:])
-            del temp_blk[:]
+        #if "{" in temp_blk:
+        #    return
+        #else:
+        #    ir_blocks.append(temp_blk[:])
+        #    del temp_blk[:]
+        pass
             
     elif node.type is "LCURLY":
-        pass
+        temp_blk.append(node.leaf)
 
     elif node.type is "SEEq":
         blk_str = se_extractor(node)
