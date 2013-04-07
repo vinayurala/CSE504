@@ -11,6 +11,7 @@ def ae_extractor(node):
     #blk = list()
     global tID
     global tVar
+    blk_str = str()
     
     if node.leaf == "input":
         blk_str = node.leaf
@@ -24,16 +25,28 @@ def ae_extractor(node):
 
     elif node.type is "Binop":
         if node.children[1].type is "Binop":
-            
-        
-        blk_str = str(node.children[0].leaf)
-        blk_str += str(node.leaf)
-        if node.children[1].type is "Binop":
             blk_str += ae_extractor(node.children[1])
+        
+        blk_str += str(node.children[0].leaf) + " "
+        blk_str += str(node.leaf) + " "
+        if node.children[1].type is "Binop":
+            blk_str += tVar + str(tID - 1)
         else:
             blk_str += str(node.children[1].leaf)
-        blk_str = tVar + str(tID) + " = " + blk_str
+        if "\n" in blk_str:
+            idx = blk_str.rfind('\n', 0, len(blk_str))
+            str1 = blk_str[idx+1:len(blk_str)]
+            str2 = blk_str[0:idx+1]
+            blk_str = str()
+            str1 = tVar + str(tID) + " = " + str1 + "\n"
+            blk_str = str2 + str1
+
+        else:
+            blk_str = tVar + str(tID) + " = " + blk_str + "\n"
         tID += 1
+
+    elif node.type is "Unop":
+        pass
 
     else:
         blk_str = str(node.children[0].children[0])
@@ -102,10 +115,11 @@ def gencode(node):
         
     elif node.type is "while":             
         blk_str = ae_extractor(node.children[0])
-        blk1.append(blk_str)
-        label_str = "if " + tVar + str(tID - 1) + "goto label " + str(labelID + 1) + "\n"
+        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID + 1) + "\n"
         blk2 = gencode(node.children[1])
         labelID += 1
+        blk1.append(blk_str)
+        temp_blk.append(label_str)
 
     elif node.type is "for":
         blk1 = se_extractor(node.children[0])
