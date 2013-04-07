@@ -15,7 +15,7 @@ except IOError:
     print "File " + sys.argv[1] + " not found!!"
     sys.exit(-1)
 
-#wellformed(astRoot, decl, defined)
+wellformed(astRoot, decl, defined)
 print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
 print "Blocks :"

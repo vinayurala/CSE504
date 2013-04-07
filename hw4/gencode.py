@@ -24,7 +24,6 @@ def unop_extractor(node):
     return unop_str
 
 def ae_extractor(node):
-    #blk = list()
     global tID
     global tVar
     blk_str = str()
@@ -35,6 +34,9 @@ def ae_extractor(node):
     elif node.type is "AE":
         if node.children[0].type is "Binop":
             blk_str = ae_extractor(node.children[0])
+
+    elif node.type is "AEOpt":
+        return (ae_extractor(node.children[0]))
 
     elif node.type in ["IntConst", "ID"]:
         blk_str = node.leaf
@@ -71,8 +73,6 @@ def ae_extractor(node):
         blk_str = tVar + str(tID) + " = " + blk_str
         tID += 1
 
-    #blk.append(blk_str)
-
     return blk_str
 
 def lhs_extractor(node):
@@ -101,6 +101,10 @@ def se_extractor(node):
             blk_str += str1
         
         return blk_str
+
+    elif node.type is "SEOpt":
+        return se_extractor(node.children[0])
+
     else:
         if node.type is "SEPre":
             blk_str = node.children[0].leaf
@@ -125,7 +129,6 @@ def gencode(node):
 
     if node.type is "if":
         blk_str = ae_extractor(node.children[0])
-        #blk1.append(blk_str)
         temp_blk.append(blk_str)
         label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
         temp_blk.append(label_str)
@@ -144,20 +147,36 @@ def gencode(node):
         
     elif node.type is "while":             
         blk_str = ae_extractor(node.children[0])
-        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID - 1) + "\n"
+        label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
+        temp_blk.append(blk_str)
+        temp_blk.append(label_str)
         blk2 = gencode(node.children[1])
         labelID += 1
-        #blk1.append(blk_str)
+        label_str = "goto label " 
+        temp_blk.append(label_str)
+
+    elif node.type is "do":
+        label_str = "label " + str(labelID) + ":\n"
+        temp_blk.append(label_str)
+        blk1 = gencode(node.children[0])
+        blk_str = ae_extractor(node.children[1])
+        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID - 1) + "\n"
+        labelID += 1
         temp_blk.append(blk_str)
         temp_blk.append(label_str)
 
     elif node.type is "for":
-        blk1 = se_extractor(node.children[0])
-        blk2 = gencode(node.children[5])
+        blk_str = se_extractor(node.children[0])
+        temp_blk.append(blk_str)
         blk_str = ae_extractor(node.children[2])
-        del blk1[:]
-        blk1.append(blk_str)
-        blk1 = se_extractor(node.children[4])
+        label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
+        temp_blk.append(label_str)
+        labelID += 1
+        blk2 = gencode(node.children[5])
+        blk_str = se_extractor(node.children[4])
+        temp_blk.append(blk_str)
+        label_str = "goto label "
+        temp_blk.append(label_str)
                 
     elif node.type is "Binop":
         if node.children[0].type in ["IntConst", "ID"]:
@@ -196,15 +215,8 @@ def gencode(node):
 
     elif node.type is "RCURLY":
         temp_blk.append(node.leaf)
-        #ir_blocks.append(temp_blk[:])
-        #del temp_blk[:]
 
     elif node.type is "SEMI":
-        #if "{" in temp_blk:
-        #    return
-        #else:
-        #    ir_blocks.append(temp_blk[:])
-        #    del temp_blk[:]
         pass
             
     elif node.type is "LCURLY":
