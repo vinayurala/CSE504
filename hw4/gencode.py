@@ -228,8 +228,24 @@ def gencode(node):
 
     return temp_blk
 
+def get_idx(blocks, brace):
+    br_list = list()
+    for idx in range(len(blocks)):
+        if blocks[idx] == brace:
+            br_list.append(idx)
+
+    return br_list
+
+def second_pass(blocks):
+    ir_blocks = list()
+    open_brace_list = get_idx(blocks, "{")
+    close_brace_list = get_idx(blocks, "}")
+
+
+
 def final_codegen(root):
-    ir_blocks = gencode(root)
+    block_list = gencode(root)
+    ir_blocks = second_pass(block_list)
     return ir_blocks
 
 if __name__ == "__main__":
