@@ -7,6 +7,22 @@ tID = 1
 tVar = "t"
 labelID = 1
 
+def unop_extractor(node):
+    global tVar
+    global tID
+
+    unop_str = ()
+    unop_str = node.leaf + " "
+    if node.children[0].type in ["IntConst", "ID"]:
+        unop_str += str(node.children[0].leaf)
+    else:
+        unop_str += str(ae_extractor(node.children[0]))
+    
+    unop_str = tVar + str(tID) + " = " + unop_str + "\n" 
+    tID += 1
+
+    return unop_str
+
 def ae_extractor(node):
     #blk = list()
     global tID
@@ -18,7 +34,7 @@ def ae_extractor(node):
     
     elif node.type is "AE":
         if node.children[0].type is "Binop":
-            blk_str = str(gencode(node.children[0]))
+            blk_str = ae_extractor(node.children[0])
 
     elif node.type in ["IntConst", "ID"]:
         blk_str = node.leaf
@@ -27,9 +43,12 @@ def ae_extractor(node):
         if node.children[1].type is "Binop":
             blk_str += ae_extractor(node.children[1])
         
+        elif node.children[1].type is "Unop":
+            blk_str += unop_extractor(node.children[1])
+
         blk_str += str(node.children[0].leaf) + " "
         blk_str += str(node.leaf) + " "
-        if node.children[1].type is "Binop":
+        if node.children[1].type in ["Binop", "Unop"]:
             blk_str += tVar + str(tID - 1)
         else:
             blk_str += str(node.children[1].leaf)
@@ -44,9 +63,6 @@ def ae_extractor(node):
         else:
             blk_str = tVar + str(tID) + " = " + blk_str + "\n"
         tID += 1
-
-    elif node.type is "Unop":
-        pass
 
     else:
         blk_str = str(node.children[0].children[0])
@@ -73,9 +89,17 @@ def lhs_extractor(node):
 
 def se_extractor(node):
     if node.type is "SEEq":
+       
         blk_str = str(lhs_extractor(node.children[0])) + " "
         blk_str += str(node.children[1].leaf) + " " 
-        blk_str += str(ae_extractor(node.children[2]))
+        str1 = str(ae_extractor(node.children[2]))
+        
+        if "\n" in str1:
+            blk_str += str(tVar) + str(tID - 1) + "\n"
+            blk_str = str1 + blk_str
+        else:
+            blk_str += str1
+        
         return blk_str
     else:
         if node.type is "SEPre":
@@ -103,7 +127,7 @@ def gencode(node):
         blk_str = ae_extractor(node.children[0])
         blk_str += "\n"
         blk1.append(blk_str)
-        label_str = "if not " + tVar + str(tID - 1) + " goto label " + str(labelID + 1) + "\n"
+        label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
         temp_blk.append(label_str)
         label_str = "label " + str(labelID) + ":\n"
         labelID += 1
@@ -115,7 +139,7 @@ def gencode(node):
         
     elif node.type is "while":             
         blk_str = ae_extractor(node.children[0])
-        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID + 1) + "\n"
+        label_str = "if " + tVar + str(tID - 1) + " goto label " + "\n"
         blk2 = gencode(node.children[1])
         labelID += 1
         blk1.append(blk_str)
@@ -151,7 +175,7 @@ def gencode(node):
 
     elif node.type is "Unop":
         blk_str = str(node.leaf)
-        blk_str += ae_extractor(node.children[0])
+        blk_str += str(ae_extractor(node.children[0]))
         temp_blk.append(blk_str)
 
     elif node.type is "Pgm":
