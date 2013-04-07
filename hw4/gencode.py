@@ -125,8 +125,8 @@ def gencode(node):
 
     if node.type is "if":
         blk_str = ae_extractor(node.children[0])
-        blk_str += "\n"
-        blk1.append(blk_str)
+        #blk1.append(blk_str)
+        temp_blk.append(blk_str)
         label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
         temp_blk.append(label_str)
         label_str = "label " + str(labelID) + ":\n"
@@ -136,13 +136,19 @@ def gencode(node):
         label_str = "label " + str(labelID) + ":\n"
         temp_blk.append(label_str)
         labelID += 1
+        if len(node.children) == 3:
+            blk3 = gencode(node.children[2])
+            label_str = "label" + str(labelID) + ":\n"
+            temp_blk.append(label_str)
+            labelID += 1
         
     elif node.type is "while":             
         blk_str = ae_extractor(node.children[0])
-        label_str = "if " + tVar + str(tID - 1) + " goto label " + "\n"
+        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID - 1) + "\n"
         blk2 = gencode(node.children[1])
         labelID += 1
-        blk1.append(blk_str)
+        #blk1.append(blk_str)
+        temp_blk.append(blk_str)
         temp_blk.append(label_str)
 
     elif node.type is "for":
@@ -153,12 +159,6 @@ def gencode(node):
         blk1.append(blk_str)
         blk1 = se_extractor(node.children[4])
                 
-    elif node.type is "else":
-        label_str = "label " + str(labelID) + ":\n"
-        labelID += 1
-        for child in node.children[:]:
-            blk2 = gencode(child)
-
     elif node.type is "Binop":
         if node.children[0].type in ["IntConst", "ID"]:
             blk_str = str(node.children[0].leaf)
