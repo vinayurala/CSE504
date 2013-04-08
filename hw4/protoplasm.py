@@ -21,4 +21,4 @@ gencode_blocks = final_codegen(astRoot)
 print "Blocks :"
 for block in gencode_blocks:
     print block
-#(inSets, outSets) = livenessanalysis(gencode_blocks)
+(inSets, outSets) = livenessanalysis(gencode_blocks)

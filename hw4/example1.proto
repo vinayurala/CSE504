@@ -1,7 +1,7 @@
 int a, b, c, s;
-int e[];
+int d[];
+d = new int [10];
 a = input();
-e = new int[10];
 if(3-4) then { 
 if(a==10) then {
 	  a = 5;}
@@ -26,7 +26,7 @@ do {
       b = 5 * 2;
    } while (c < 3);
 
-for (a = 3; a < b; a = a + 2)
+for (a = 3; a < b; a++)
 {
 	b = b + 2;
 }

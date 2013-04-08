@@ -36,7 +36,8 @@ def ae_extractor(node):
             blk_str = ae_extractor(node.children[0])
 
     elif node.type is "AEOpt":
-        return (ae_extractor(node.children[0]))
+        if node.children:
+            return (ae_extractor(node.children[0]))
 
     elif node.type in ["IntConst", "ID"]:
         blk_str = node.leaf
@@ -103,7 +104,8 @@ def se_extractor(node):
         return blk_str
 
     elif node.type is "SEOpt":
-        return se_extractor(node.children[0])
+        if node.children:
+            return se_extractor(node.children[0])
 
     else:
         if node.type is "SEPre":
@@ -114,6 +116,13 @@ def se_extractor(node):
             blk_str = node.children[1].leaf
             blk_str += lhs_extractor(node.children[0])
             return blk_str
+
+def place_seopt(blk_list, se_str):
+    new_list = blk_list[::-1]
+    idx = new_list.index("}")
+    new_list.insert(idx+1, se_str)
+    return (new_list[::-1])
+                                   
 
 def gencode(node):
     global ir_blocks
@@ -132,13 +141,9 @@ def gencode(node):
         temp_blk.append(blk_str)
         label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
         temp_blk.append(label_str)
-        label_str = "label " + str(labelID) + ":\n"
-        labelID += 1
-        temp_blk.append(label_str)
         blk2 = gencode(node.children[1])
         label_str = "label " + str(labelID) + ":\n"
         temp_blk.append(label_str)
-        labelID += 1
         if len(node.children) == 3:
             blk3 = gencode(node.children[2])
             label_str = "label" + str(labelID) + ":\n"
@@ -160,7 +165,7 @@ def gencode(node):
         temp_blk.append(label_str)
         blk1 = gencode(node.children[0])
         blk_str = ae_extractor(node.children[1])
-        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID - 1) + "\n"
+        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID) + "\n"
         labelID += 1
         temp_blk.append(blk_str)
         temp_blk.append(label_str)
@@ -174,7 +179,9 @@ def gencode(node):
         labelID += 1
         blk2 = gencode(node.children[5])
         blk_str = se_extractor(node.children[4])
-        temp_blk.append(blk_str)
+        if not blk_str is None:
+            temp_blk = place_seopt(blk2, blk_str)
+        #temp_blk.append(blk_str)
         label_str = "goto label "
         temp_blk.append(label_str)
                 
