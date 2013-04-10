@@ -183,8 +183,8 @@ def p_dimstar(p):
     '''DimStar : LSQR RSQR DimStar
         DimStar : '''
     if len(p) == 1:
-        p[0] = Node("DimStar")
-    elif len(p) == 3:
+        p[0] = Node("DimStar", children = [])
+    elif len(p) == 4:
         p[1] = Node("LSQR", leaf = p[1])
         p[2] = Node("RSQR", leaf = p[2])
         p[0] = Node("DimStar", children = [p[1], p[2], p[3]])
@@ -309,29 +309,30 @@ def wellformed(node,decl,defined):
 
     
     elif(node.type == "Var"):
-        id = node.children[0].leaf
-        decl.append(id)
+        id1 = node.children[0].leaf
+        decl.append(id1)
+        #print id
         iterable_list = node.children[1:]
     
     elif node.type == "ID":
-        id = node.leaf
-        if not id in decl:
-            print "Wellformed ERROR: Variable \"" + id + "\" NOT DECLARED before use"
+        id1 = node.leaf
+        if not id1 in decl:
+            print "Wellformed ERROR: Variable \"" + str(id1) + "\" NOT DECLARED before use"
             sys.exit(-1)
             return []
-        elif not id in defined:
-            print "Wellformed ERROR: Variable \"" + id + "\" NOT DEFINED before use"
+        elif not id1 in defined:
+            print "Wellformed ERROR: Variable \"" + str(id1) + "\" NOT DEFINED before use"
             sys.exit(-1)
             return []
     
     elif node.type == "SEEq":
         #print "here"
-        id = node.children[0].leaf
-        if not id in decl:
-            print "Wellformed ERROR: Variable \"" + id + "\" NOT DECLARED before use"
+        id1 = node.children[0].leaf
+        if not id1 in decl:
+            print "Wellformed ERROR: Variable \"" + str(id1) + "\" NOT DECLARED before use"
             sys.exit(-1)
             return []
-        elif id in defined:
+        elif id1 in defined:
             pass
         else:
             defined.append(id)
@@ -340,7 +341,7 @@ def wellformed(node,decl,defined):
     
     
     for child in iterable_list:
-        #print child.type
+        print child.type
         wellformed(child,decl,defined)
     
     return
@@ -351,9 +352,11 @@ def wellformed(node,decl,defined):
 if __name__ == "__main__":
     s = ''' int a,b;
             int d,x;
+        int i;
+        int a[];
             b = 4;
         
-        
+        a = new int[10];
             if(b==5)
             then
             {
@@ -361,6 +364,8 @@ if __name__ == "__main__":
                 then
                 {
                 int c;
+            i=0;
+                c = a[i];
                 c=3;
                 b=6;}
             
@@ -390,7 +395,7 @@ if __name__ == "__main__":
         
         
         //dfsdfs
-        d++;
+       // d++;
             '''
     result = parser.parse(s)
     astRoot = yacc.parse(s)

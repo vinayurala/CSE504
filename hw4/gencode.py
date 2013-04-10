@@ -6,13 +6,21 @@ temp_blk = list()
 tID = 1
 tVar = "t"
 labelID = 1
+if_lid = 1
+else_lid = 1
+end_if_lid = 1
+loop_lid = 1
+end_loop_id = 1
 
 def unop_extractor(node):
     global tVar
     global tID
 
     unop_str = ()
-    unop_str = node.leaf + " "
+    if node.leaf is "UMINUS":
+        unop_str = "neg "
+    else:
+        unop_str = "not "
     if node.children[0].type in ["IntConst", "ID"]:
         unop_str += str(node.children[0].leaf)
     else:
@@ -89,15 +97,26 @@ def lhs_extractor(node):
     return str1
 
 def se_extractor(node):
+ 
     if node.type is "SEEq":
-       
         blk_str = str(lhs_extractor(node.children[0])) + " "
         blk_str += str(node.children[1].leaf) + " " 
-        str1 = str(ae_extractor(node.children[2]))
+        if node.children[2].type in ["SEEq", "SEPre", "SEPost"]:
+            str1 = str(se_extractor(node.children[2]))
+        else:
+            str1 = str(ae_extractor(node.children[2]))
         
         if "\n" in str1:
-            blk_str += str(tVar) + str(tID - 1) + "\n"
-            blk_str = str1 + blk_str
+            if node.children[2] and node.children[2].type in ["SEPost", "SEPre"]:
+                (var_str, _) = str1.split('=' , 2)
+                blk_str += var_str
+
+            else:
+                blk_str += str(tVar) + str(tID - 1) + "\n"
+            if node.children[2].type is "SEPre":
+                blk_str = str1 + blk_str
+            else:
+                blk_str += "\n" + str1
         else:
             blk_str += str1
         
@@ -109,13 +128,14 @@ def se_extractor(node):
 
     else:
         if node.type is "SEPre":
-            blk_str = node.children[0].leaf
-            blk_str += lhs_extractor(node.children[1])
+            blk_str = lhs_extractor(node.children[1])
+            blk_str = blk_str + " = " + blk_str + " + 1\n" 
             return blk_str
         else:
-            blk_str = node.children[1].leaf
-            blk_str += lhs_extractor(node.children[0])
+            blk_str = lhs_extractor(node.children[0])
+            blk_str = blk_str + " = " + blk_str + " + 1\n" 
             return blk_str
+
 
 def place_seopt(blk_list, se_str):
     new_list = blk_list[::-1]
@@ -181,7 +201,6 @@ def gencode(node):
         blk_str = se_extractor(node.children[4])
         if not blk_str is None:
             temp_blk = place_seopt(blk2, blk_str)
-        #temp_blk.append(blk_str)
         label_str = "goto label "
         temp_blk.append(label_str)
                 
@@ -235,40 +254,8 @@ def gencode(node):
 
     return temp_blk
 
-def get_idx(blocks, brace):
-    br_list = list()
-    for idx in range(len(blocks)):
-        if blocks[idx] == brace:
-            br_list.append(idx)
-
-    return br_list
-
-def second_pass(blocks):
-    ir_blocks = list()
-    open_brace_list = get_idx(blocks, "{")
-    #close_brace_list = get_idx(blocks, "}")
-
-    print close_brace_list
-
-    idx = 0
-    new_blk = list()
-    while idx in range(len(blocks)):
-        if "if" in blocks[idx]:
-            new_blk.append(blocks[idx : min(close_brace_list)])
-            idx = min(close_brace_list) + 1
-            close_brace_list.pop(0)
-        else:
-            new_blk.append(blocks[idx])
-            idx += 1
-
-        ir_blocks.append(new_blk[:])
-        del new_blk[:]
-
-    return ir_blocks
-
 def final_codegen(root):
-    #block_list = gencode(root)
-    #ir_blocks = second_pass(block_list)
+
     ir_blocks = gencode(root)
     return ir_blocks
 
