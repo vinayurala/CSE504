@@ -331,7 +331,10 @@ def gencode(node):
         blk2 = gencode(node.children[5])
         blk_str = se_extractor(node.children[4])
         if not blk_str is None:
-            temp_blk = place_seopt(blk2, blk_str)
+            if post_dec_str:
+                temp_blk = place_seopt(blk2, post_dec_str)
+            else:
+                temp_blk = place_seopt(blk2, blk_str)
 
         label_str = "goto label " + "\n"
         temp_blk.append(label_str)
