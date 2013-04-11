@@ -151,7 +151,7 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
                 continue
             if not flag:
                 break
-            if (len(intGraph[keys]) < 10):
+            if (len(intGraph[keys]) < 15):
                 nextKey = keys
                 flag = 0
         if(flag):
@@ -176,7 +176,7 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
             neighborColors.append(coloredList[e])
         if neighborColors is None:
             flag = 0
-        while(flag and colorV < 10):
+        while(flag and colorV < 15):
             if colorV in neighborColors:
                 colorV += 1
             else:
@@ -186,12 +186,12 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
             spilledList.append(v)
         else:
             coloredList[v] = colorV
-            colorV = (colorV + 1) % 10
+            colorV = (colorV + 1) % 15
 
     for keys in coloredList:
         if ((coloredList[keys] == None) and (not keys in spilledList)):
             coloredList[keys] = colorV 
-            colorV = (colorV + 1) % 10
+            colorV = (colorV + 1) % 15
     
     return (coloredList, spilledList)
 

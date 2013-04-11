@@ -9,9 +9,14 @@ labelID = 1
 if_lid = 1
 else_lid = 1
 end_if_lid = 1
-loop_lid = 1
-end_loop_id = 1
+while_lid = 1
+end_while_lid = 1
+do_while_lid = 1
+end_do_while_lid = 1
+for_lid = 1
+end_for_lid = 1
 post_dec_str = str()
+post_dec_list = list()
 
 def unop_extractor(node):
     global tVar
@@ -104,11 +109,19 @@ def ae_extractor(node):
 
         if node.children[0].type in ["IntConst", "ID"] or node.children[1].type in ["IntConst", "ID"]:
             if node.children[0].leaf and not node.children[1].type is "Lhs":
-                blk_str += str(node.children[0].leaf) + " "
-                blk_str += str(node.leaf) + " "                
+                if node.children[1].type in ["SEPre", "SEPost"]:
+                    blk_str += " " + str(node.leaf) + " "
+                    blk_str += str(node.children[0].leaf) + " "
+                else:
+                    blk_str += str(node.children[0].leaf) + " "
+                    blk_str += str(node.leaf) + " "                
             elif node.children[1].leaf and not node.children[0].type is "Lhs":
-                blk_str += str(node.children[1].leaf) + " "
-                blk_str += str(node.leaf) + " "
+                if node.children[0].type in ["SEPre", "SEPost"]:
+                    blk_str += " " + str(node.leaf) + " "
+                    blk_str += str(node.children[1].leaf) + " "
+                else:
+                    blk_str += str(node.children[1].leaf) + " "
+                    blk_str += str(node.leaf) + " "
 
         if node.children[1].type is "SEPre" or node.children[0].type is "SEPre":
             (str2, _) = blk_str.split('=', 2)
@@ -116,21 +129,27 @@ def ae_extractor(node):
 
         if node.children[1].type is "SEPost" or node.children[0].type is "SEPost":
             if node.type is "Binop":
-                (str2, _) = blk_str.split('=', 2)
-                (str3, str4) = blk_str.split('\n', 2)
-                str4 += " " + node.leaf + " " + str2 + "\n"
-                #blk_str = str4 + str3
+                if '=' in blk_str:
+                    (str2, _) = blk_str.split('=', 2)
+                    (str3, str4) = blk_str.split('\n', 2)
+                    str4 += " " + node.leaf + " " + str2 + "\n"
+                else:
+                    pass
                 
             else:
-                (str2, _) = blk_str.split('=', 2)
-                (str3, str4) = blk_str.split('\n', 2)
-                str4 += str2 + "\n"
-                blk_str = str4 + str3
+                if '=' in blk_str:
+                    (str2, _) = blk_str.split('=', 2)
+                    (str3, str4) = blk_str.split('\n', 2)
+                    str4 += str2 + "\n"
+                    blk_str = str4 + str3
+                else:
+                    pass
+                    
 
         elif node.children[1].type in ["Binop", "Unop"] or node.children[0].type in ["Binop", "Unop"] :
             blk_str += tVar + str(tID - 1)
 
-        if node.children[1].type in ["Lhs", "AE"] or node.children[0].type in ["Lhs", "AE"]:
+        if node.children[1].type in ["Lhs", "AE", "SEPre", "SEPost"] or node.children[0].type in ["Lhs", "AE", "SEPre", "SEPost"]:
             pass
 
         else:
@@ -201,6 +220,7 @@ def lhs_extractor(node):
 
 def se_extractor(node):
     global post_dec_str
+    global post_dec_list
  
     if node.type is "SEEq":
         blk_str = str(lhs_extractor(node.children[0])) + " "
@@ -214,6 +234,9 @@ def se_extractor(node):
             if node.children[2] and node.children[2].type in ["SEPost", "SEPre"]:
                 (var_str, _) = str1.split('=' , 2)
                 blk_str += var_str
+
+            #if node.children[2] and node.children[2].type is "SEEq":
+            #    pass
 
             elif node.children[2].type is "Lhs":
                 idx = str1.rfind('\n', 0, len(str1))
@@ -231,11 +254,16 @@ def se_extractor(node):
                 
             else:
                 if node.children[2].type is "Binop":
-                    if post_dec_str:
-                        blk_str = str1 + "\n" + post_dec_str + "\n" + blk_str
-                        post_dec_str = str()
+                    if post_dec_list:
+                        blk_str = str1 + "\n" + str(post_dec_list.pop()) + "\n" + blk_str
+                        str1 = str()
                     else:
                         blk_str = str1 + blk_str
+                        str1 = str()
+                        
+                if node.children[2].type is "SEEq":
+                    blk_str = str1 + "\n" + blk_str
+
                 else:
                     blk_str += "\n" + str1
                     
@@ -244,6 +272,8 @@ def se_extractor(node):
         else:
             blk_str += str1 + "\n"
         
+        if post_dec_list:
+            blk_str += str(post_dec_list.pop())
         return blk_str
 
     elif node.type is "SEOpt":
@@ -262,15 +292,23 @@ def se_extractor(node):
             blk_str = lhs_extractor(node.children[0])
             if node.children[1].leaf == "++":
                 post_dec_str = blk_str + " = " + blk_str + " + 1\n" 
+                post_dec_list.append(post_dec_str)
+                post_dec_str = str()
             else:
                 post_dec_str = blk_str + " = " + blk_str + " - 1\n"                 
+                post_dec_list.append(post_dec_str)
+                post_dec_str = str()
+
             return blk_str
 
 
 def place_seopt(blk_list, se_str):
     new_list = blk_list[::-1]
     idx = new_list.index("}\n")
-    new_list.insert(idx+1, se_str)
+    if post_dec_list:
+        new_list.insert(idx+1, post_dec_list.pop())
+    else:
+        new_list.insert(idx+1, se_str)
     return (new_list[::-1])
                                    
 
@@ -279,8 +317,15 @@ def gencode(node):
     global temp_blk
     global tID
     global tVar
-    global labelID
     global post_dec_str
+    global if_lid
+    global else_lid
+    global end_if_lid
+    global while_lid
+    global end_while_lid
+    global do_while_lid
+    global for_lid
+    global end_for_lid
 
     blk1 = list()
     blk2 = list()
@@ -290,34 +335,50 @@ def gencode(node):
     if node.type is "if":
         blk_str = ae_extractor(node.children[0])
         temp_blk.append(blk_str)
-        label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
+        if len(node.children) == 3:
+            label_str = "if not " + tVar + str(tID - 1) + " goto label else_lid" + str(else_lid) + "\n"
+        else:
+            label_str = "if not " + tVar + str(tID - 1) + " goto label end_if_lid" + str(end_if_lid) + "\n"
+
+        end_if_lid += 1
         temp_blk.append(label_str)
         blk2 = gencode(node.children[1])
-        label_str = "label " + str(labelID) + ":\n"
-        temp_blk.append(label_str)
         if len(node.children) == 3:
-            blk3 = gencode(node.children[2])
-            label_str = "label" + str(labelID) + ":\n"
+            label_str = "goto label end_if" + str(end_if_lid - 1) + " \n"
             temp_blk.append(label_str)
-            labelID += 1
+            label_str = "label else_lid" + str(else_lid) + " :\n"
+            else_lid += 1
+            temp_blk.append(label_str)
+            blk3 = gencode(node.children[2])
+            
+        label_str = "label end_if" + str(end_if_lid-1) + " :\n"
+        end_if_lid -= 1
+        temp_blk.append(label_str)
         
     elif node.type is "while":             
         blk_str = ae_extractor(node.children[0])
-        label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
+        label_str = "if not " + tVar + str(tID - 1) + " goto label end_while_lid " + str(end_while_lid) + "\n"
+        end_while_lid += 1
         temp_blk.append(blk_str)
         temp_blk.append(label_str)
+        label_str = "label while_lid" + str(while_lid) + " :\n"
+        while_lid += 1
+        temp_blk.append(label_str)
         blk2 = gencode(node.children[1])
-        labelID += 1
-        label_str = "goto label " + "\n"
+        label_str = "goto label while_lid" + str(while_lid - 1) + "\n"
+        while_lid += 1
+        temp_blk.append(label_str)
+        label_str = "label end_while" + str(end_while_lid - 1) + " :\n"
         temp_blk.append(label_str)
 
     elif node.type is "do":
-        label_str = "label " + str(labelID) + ":\n"
+        label_str = "label do_while_lid" + str(do_while_lid) + " :\n"
+        do_while_lid += 1
         temp_blk.append(label_str)
         blk1 = gencode(node.children[0])
         blk_str = ae_extractor(node.children[1])
-        label_str = "if " + tVar + str(tID - 1) + " goto label " + str(labelID) + "\n"
-        labelID += 1
+        label_str = "if " + tVar + str(tID - 1) + " goto label do_while_lid" + str(do_while_lid - 1) + "\n"
+        do_while_lid += 1
         temp_blk.append(blk_str)
         temp_blk.append(label_str)
 
@@ -325,9 +386,13 @@ def gencode(node):
         blk_str = se_extractor(node.children[0])
         temp_blk.append(blk_str)
         blk_str = ae_extractor(node.children[2])
-        label_str = "if not " + tVar + str(tID - 1) + " goto label " + "\n"
+        temp_blk.append(blk_str)
+        label_str = "if not " + tVar + str(tID - 1) + " goto label end_for_lid" + str(end_for_lid) + "\n"
         temp_blk.append(label_str)
-        labelID += 1
+        end_for_lid += 1
+        label_str = "label for_lid" + str(for_lid) + " :\n"
+        for_lid += 1
+        temp_blk.append(label_str)
         blk2 = gencode(node.children[5])
         blk_str = se_extractor(node.children[4])
         if not blk_str is None:
@@ -336,7 +401,9 @@ def gencode(node):
             else:
                 temp_blk = place_seopt(blk2, blk_str)
 
-        label_str = "goto label " + "\n"
+        label_str = "goto label for_lid" + str(for_lid - 1) + "\n"
+        temp_blk.append(label_str)
+        label_str = "label end_for" + str(end_for_lid - 1) + " :\n"
         temp_blk.append(label_str)
                 
     elif node.type is "Binop":

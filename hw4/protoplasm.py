@@ -3,6 +3,7 @@ from ply.yacc import *
 from parser import *
 from gencode import *
 from liveness import *
+#from mipsCode import *
 
 if (len(sys.argv) != 2):
     print "Usage: python " + sys.argv[0] + " <Protofilename>"
@@ -31,10 +32,28 @@ print "Blocks :"
 for blk in gencode_blocks:
     print blk
 (inSets, outSets) = final_liveness(icLines)
-print "Insets: "
-print inSets
-print "OutSets: "
-print outSets
+#print "Insets: "
+#print inSets
+#print "OutSets: "
+#print outSets
 intGraph = buildInterferenceGraph(inSets, outSets)
-print "Interference graph: "
-print intGraph
+#print "Interference graph: "
+#print intGraph
+(coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
+#print "Colored List:"
+#for k in coloredList:
+#    print "Var: " + k + "  Reg: " + str(coloredList[k])
+#print "Spilled List: "
+#for v in spilledList:
+#    print v
+tLines = list()
+tLines = gencode_blocks[:]
+for var in spilledList:
+    (gencode_blocks, tID) = modifyIC(tLines, var, tID)
+#if spilledList:
+#    print "Modified IC Lines: "
+#    for blk in gencode_blocks:
+#        print blk
+#asmCode = genMIPSCode(icLines, coloredList, spilledList)
+#for line in asmCode:
+#    print line
