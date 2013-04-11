@@ -51,7 +51,10 @@ def ae_extractor(node):
             blk_str = ae_extractor(node.children[0])
 
         if node.children[0].type is "NEW":
-            blk_str = "new int"
+            blk_str = "new int" 
+            str1 = ae_extractor(node.children[2])
+            str2 = ae_extractor(node.children[3])
+            blk_str += "[" + str(str1) + "]" + str(str2)
 
     elif node.type is "AEOpt":
         if node.children:
@@ -59,6 +62,13 @@ def ae_extractor(node):
 
     elif node.type in ["IntConst", "ID"]:
         blk_str = node.leaf
+
+    elif node.type is "DimExpr":
+        blk_str = ae_extractor(node.children[1])
+
+    elif node.type is "DimStar":
+        if node.children:
+            return ae_extractor(node.children[2])
 
     elif node.type in ["SEPost", "SEPre"]:
         blk_str = se_extractor(node)

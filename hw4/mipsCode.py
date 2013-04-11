@@ -119,7 +119,12 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 else:
                     tStr += "neg " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[1]]] + "\n"
 
-            elif 
+            elif (tList[0] == "not"):
+                if tList.isdigit():
+                    tStr += "li $s7, " + str(tList[1]) + "\n"
+                    tStr += "xori $s7, $s7, 0x0\nslut $s7, 1\n"
+                else:
+                    tStr += "xori " + registerMap[coloredList[
 
             elif (tList[0] == "load"):
                 if not lhs in coloredList:
