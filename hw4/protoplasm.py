@@ -40,10 +40,12 @@ intGraph = buildInterferenceGraph(inSets, outSets)
 #print "Interference graph: "
 #print intGraph
 (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
-#print "Colored List:"
+print "Colored List:"
 #for k in coloredList:
 #    print "Var: " + k + "  Reg: " + str(coloredList[k])
-#print "Spilled List: "
+print coloredList
+print "Spilled List: "
+print spilledList
 #for v in spilledList:
 #    print v
 tLines = list()

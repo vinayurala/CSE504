@@ -1,8 +1,8 @@
 int a, b, c, s;
-int d[];
-d = new int [10];
+//int d[];
+//d = new int [10];
 a = input();
-if(3-4) then { 
+if(3<4) then { 
 if(a==10) then {
 	  a = 5;}
 	a = a + 5 * 2;}
@@ -16,19 +16,24 @@ if (b < 3) then {
 else {
    c = a * 1;
 }
+c = 2;
 while (c < 3) do
 {
    b = b + 2;
    a = a + 3;
+   c = c + 1;
 }
+c = 4;
 do {
       a = 3 + a;
       b = 5 * 2;
       //d[a] = b + 2;
    } while (c < 3);
 
-for (a = 3; a < b; a++)
+for (a = 3; a < 10; a++)
 {
 	b = b + 3;
-	b = b + d[a];
+	//b = b + d[a];
 }
+print (a);
+print (c + b);

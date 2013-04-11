@@ -1,16 +1,18 @@
 int a, b;
-//int d[];
-//d = new int [10];
-a = 0;
+int d[];
+d = new int [10];
+a = input();
 b = 1;
-//d[a] = b = a + 2;
+d[a] = b = a + 2;
 //b = a++ - 3;
-b = d[a++]++;
-//if ((a == 1) && (a < 2)) then
-//b = --a;
-//a = b++ - b * 5;
+//b = d[a++]++;
+if (a > 1) then
+{
+b = --a;
+a = b++ - b * 5;
+}
 //print (a+2);
 //for (a = 1; a < b; a++)
 //{
 //}
-//print (b);
+print (b);

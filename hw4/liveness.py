@@ -15,6 +15,7 @@ def liveness (icLines):
     outSet = set()
     global inSets
     global outSets
+    global defined_var
     rhsVars = []
     tList = []
 
@@ -38,10 +39,10 @@ def liveness (icLines):
                 (lhs, _) = line.split('=', 2)
                 lhs = lhs.replace(" ", "")
                 defSet.add(lhs)
-                defined_var.add(lhs)
+                defined_var.add(lhs)        
             else:
                 continue
-        elif not "print" in line:
+        elif not "print" in line:            
             if '==' in line:
                 idx = line.index('=')
                 lhs = line[0:idx]
@@ -51,9 +52,10 @@ def liveness (icLines):
 
             lhs = lhs.replace(" ", "")
             defSet.add(lhs)
+            defined_var.add(lhs)        
             rhsVars = rhs.split()
             for var in rhsVars:
-                if not var in ["+", "-", "*", "/", "%", "neg", "not", "&&", "||", ">", "<", ">=", "<=", "==", "!="] and not var.isdigit() and var != "input":
+                if not var in ["+", "-", "*", "/", "%", "neg", "not", "&&", "||", "<", ">", ">=", "<=", "!=", "=="] and not var.isdigit() and var != "input":
                     var = var.replace(" ", "")
                     useSet.add(var)
         else:
@@ -61,7 +63,7 @@ def liveness (icLines):
             for t in tList:
                 if t[0] == 1 and t[1] != "print":
                     useSet.add(t[1])
-        
+
         inSet = useSet.union(outSet.difference(defSet))
         inSets.append(inSet)
         outSets.append(outSet)  
@@ -193,6 +195,8 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
             coloredList[keys] = colorV 
             colorV = (colorV + 1) % 15
     
+    print "defined_var_set:"
+    print defined_var
     return (coloredList, spilledList)
 
 
