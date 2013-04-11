@@ -1,8 +1,10 @@
-int a;
-int d[];
-d = new int [10];
+int a, b;
+//int d[];
+//d = new int [10];
 a = 0;
+b = 1;
 //d[a] = a + 2;
-if ((a == 1) && (a < 2)) then
-a = d[a] ;
+//if ((a == 1) && (a < 2)) then
+b = --a;
+a = b++ - b * 5;
 print (a+2);

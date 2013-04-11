@@ -18,19 +18,23 @@ except IOError:
 #wellformed(astRoot, decl, defined)
 print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
+icLines = list()
+tList = list()
+for i in gencode_blocks:
+    tList = i.split("\n")
+    for t in tList:
+        icLines.append(t)
+icLines = filter(None, icLines)
+icLines = icLines[::-1]
+gencode_blocks = icLines[::-1]
 print "Blocks :"
 for blk in gencode_blocks:
     print blk
-icLines = gencode_blocks[::-1]
-icLinesStr = ''.join(icLines)
-icLines = icLinesStr.split('\n')
-icLines = filter(None, icLines)
-gencode_blocks = icLines[::-1]
-#print "Blocks :"
-#for blk in gencode_blocks:
-#    print blk
 (inSets, outSets) = final_liveness(icLines)
 print "Insets: "
 print inSets
 print "OutSets: "
 print outSets
+intGraph = buildInterferenceGraph(inSets, outSets)
+print "Interference graph: "
+print intGraph

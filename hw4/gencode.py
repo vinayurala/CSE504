@@ -11,6 +11,7 @@ else_lid = 1
 end_if_lid = 1
 loop_lid = 1
 end_loop_id = 1
+post_dec_str = str()
 
 def unop_extractor(node):
     global tVar
@@ -109,31 +110,45 @@ def ae_extractor(node):
                 blk_str += str(node.children[1].leaf) + " "
                 blk_str += str(node.leaf) + " "
 
-        if node.children[1].type in ["Binop", "Unop"] or node.children[0].type in ["Binop", "Unop"] :
-            blk_str += tVar + str(tID - 1)
-
-        elif node.children[1].type is "SEPre" or node.children[0].type is "SEPre":
+        if node.children[1].type is "SEPre" or node.children[0].type is "SEPre":
             (str2, _) = blk_str.split('=', 2)
             blk_str += str2
 
-        elif node.children[1].type is "SEPost" or node.children[0].type is "SEPost":
-            (str2, _) = blk_str.split('=', 2)
-            (str3, str4) = blk_str.split('\n', 2)
-            str4 += str2 + "\n"
-            blk_str = str4 + str3
+        if node.children[1].type is "SEPost" or node.children[0].type is "SEPost":
+            if node.type is "Binop":
+                (str2, _) = blk_str.split('=', 2)
+                (str3, str4) = blk_str.split('\n', 2)
+                str4 += " " + node.leaf + " " + str2 + "\n"
+                #blk_str = str4 + str3
+                
+            else:
+                (str2, _) = blk_str.split('=', 2)
+                (str3, str4) = blk_str.split('\n', 2)
+                str4 += str2 + "\n"
+                blk_str = str4 + str3
 
-        elif node.children[1].type in ["Lhs", "AE"] or node.children[0].type in ["Lhs", "AE"]:
+        elif node.children[1].type in ["Binop", "Unop"] or node.children[0].type in ["Binop", "Unop"] :
+            blk_str += tVar + str(tID - 1)
+
+        if node.children[1].type in ["Lhs", "AE"] or node.children[0].type in ["Lhs", "AE"]:
             pass
 
         else:
             if node.children[1].leaf:
-                blk_str += str(node.children[1].leaf)
+                if node.children[1].type in ["IntConst", "ID"]:
+                    blk_str += str(node.children[1].leaf)
             else:
-                blk_str += str(node.children[0].leaf)
+                if node.children[0].type in ["IntConst", "ID"]:
+                    blk_str += str(node.children[0].leaf)
 
         if "\n" in blk_str:
             if node.children[1].type is "SEPost" or node.children[0].type is "SEPost":
-                blk_str = tVar + str(tID) + ' = ' + blk_str + "\n"
+                if str4 and str3:
+                    blk_str = tVar + str(tID) + ' = ' + str4 
+                    blk_str = str3 + "\n" + blk_str
+                    str4 = str3 = str()
+                else:
+                    blk_str = tVar + str(tID) + ' = ' + blk_str + "\n"
 
             else:
                 idx = blk_str.rfind('\n', 0, len(blk_str))
@@ -185,6 +200,7 @@ def lhs_extractor(node):
     return str1
 
 def se_extractor(node):
+    global post_dec_str
  
     if node.type is "SEEq":
         blk_str = str(lhs_extractor(node.children[0])) + " "
@@ -215,7 +231,11 @@ def se_extractor(node):
                 
             else:
                 if node.children[2].type is "Binop":
-                    blk_str = str1 + blk_str + "\n"
+                    if post_dec_str:
+                        blk_str = str1 + "\n" + post_dec_str + "\n" + blk_str
+                        post_dec_str = str()
+                    else:
+                        blk_str = str1 + blk_str
                 else:
                     blk_str += "\n" + str1
                     
@@ -241,9 +261,9 @@ def se_extractor(node):
         else:
             blk_str = lhs_extractor(node.children[0])
             if node.children[1].leaf == "++":
-                blk_str = blk_str + " = " + blk_str + " + 1\n" 
+                post_dec_str = blk_str + " = " + blk_str + " + 1\n" 
             else:
-                blk_str = blk_str + " = " + blk_str + " - 1\n"                 
+                post_dec_str = blk_str + " = " + blk_str + " - 1\n"                 
             return blk_str
 
 
@@ -260,6 +280,7 @@ def gencode(node):
     global tID
     global tVar
     global labelID
+    global post_dec_str
 
     blk1 = list()
     blk2 = list()
