@@ -199,9 +199,20 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 str2 = ()
 
                 tIdx = icLines.index(line)
-                nextLine = icLines[tIdx+1]
-                if not "do_while_lid" in nextLine:
-                    nextLine = icLines[tIdx-2]
+                line1 = icLines[tIdx-2]
+                line2 = icLines[tIdx+1]
+                if "do_while_lid" in line2:
+                    nextLine = line2
+                    
+                if "end_if_lid" in line2:
+                    nextLine = line2
+
+                if "end_while_lid" in line1:
+                    nextLine = line1
+
+                if "end_for_lid" in line1:
+                    nextLine = line1
+
                 labelLine = nextLine.split(' ')
                 labelStr = labelLine[len(labelLine) - 1]
 

@@ -16,6 +16,9 @@ end_do_while_lid = 1
 for_lid = 1
 end_for_lid = 1
 recent_if_lid = 1
+recent_while_lid = 1
+recent_for_lid = 1
+recent_dow_lid = 1
 post_dec_str = str()
 post_dec_list = list()
 
@@ -343,6 +346,8 @@ def gencode(node):
     global for_lid
     global end_for_lid
     global recent_if_lid 
+    global recent_while_lid
+    global recent_for_lid
 
     blk1 = list()
     blk2 = list()
@@ -375,9 +380,11 @@ def gencode(node):
         temp_blk.append(label_str)
         
     elif node.type is "while":             
+        end_while_lid = recent_while_lid
         blk_str = ae_extractor(node.children[0])
         label_str = "if not " + tVar + str(tID - 1) + " goto label end_while_lid" + str(end_while_lid) + "\n"
         end_while_lid += 1
+        recent_while_lid += 1
         temp_blk.append(label_str)
         label_str = "label while_lid" + str(while_lid) + " :\n"
         while_lid += 1
@@ -388,6 +395,7 @@ def gencode(node):
         while_lid += 1
         temp_blk.append(label_str)
         label_str = "label end_while_lid" + str(end_while_lid - 1) + " :\n"
+        end_while_lid -= 1
         temp_blk.append(label_str)
 
     elif node.type is "do":
@@ -402,6 +410,7 @@ def gencode(node):
         temp_blk.append(label_str)
 
     elif node.type is "for":
+        end_for_lid = recent_for_lid
         blk_str = se_extractor(node.children[0])
         temp_blk.append(blk_str)
         blk_str = ae_extractor(node.children[2])
@@ -423,6 +432,7 @@ def gencode(node):
         label_str = "goto label for_lid" + str(for_lid - 1) + "\n"
         temp_blk.append(label_str)
         label_str = "label end_for_lid" + str(end_for_lid - 1) + " :\n"
+        end_for_lid -= 1
         temp_blk.append(label_str)
                 
     elif node.type is "Binop":
