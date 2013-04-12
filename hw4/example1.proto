@@ -19,6 +19,7 @@ else {
 c = 2;
 while (c < 3) do
 {
+   print(c);
    b = b + 2;
    a = a + 3;
    c = c + 1;

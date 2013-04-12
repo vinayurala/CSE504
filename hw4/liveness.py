@@ -195,8 +195,7 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
             coloredList[keys] = colorV 
             colorV = (colorV + 1) % 15
     
-    print "defined_var_set:"
-    print defined_var
+
     return (coloredList, spilledList)
 
 

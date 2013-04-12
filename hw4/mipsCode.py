@@ -1,10 +1,15 @@
 from liveness import *
 from gencode import *
+import re
 
 mipsCodeMap = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "div", "=": ":=", "neg": "neg", ">=": "bge", ">":"bgt", "<=":"ble", "<":"blt", "goto":"b", "==": "beq", "!=": "bne"}
-mipsInvCodeMap = {">=": "ble", ">":"blt", "<=":"bge", "<":"bgt", "==": "bne", "!=": "beq"}
+mipsInvCodeMap = {">=": "blt", ">":"ble", "<=":"bgt", "<":"bge", "==": "bne", "!=": "beq"}
 mipsTemplate = {"input": "\tli $v0, 5\n\tsyscall\n", "print": "\tli $v0, 1\n\tsyscall\n", "exit":"exit:\n\tli $v0, 10\n\tsyscall\n", "space": ".data\nspace:\t.asciiz \"\\n\"", "printLn": "\taddi $v0, $zero, 4\n\tla $a0, space\n\tsyscall\n"}
 registerMap = dict.fromkeys(range(15))
+arr_dict = dict()
+size_dict = dict()
+data_section = str()
+arr_alias_list = dict()
 
 def init_reg_map():
     global registerMap
@@ -20,6 +25,9 @@ def init_reg_map():
 def genMIPSCode (icLines, coloredList, spilledList):
     mipsLines = list()
     init_reg_map()
+    global arr_dict
+    global size_dict
+    global data_section
 
     spilledVars = dict.fromkeys(spilledList)
     tIdx = 1
@@ -27,7 +35,7 @@ def genMIPSCode (icLines, coloredList, spilledList):
         tVar = "var" + str(tIdx)
         tIdx += 1
         spilledVars[var] = tVar
-    tStr = str()
+    tStr = str() + "\n"
 
     opList = ["+", "-", "*", "/", "%"]
     relop = ["<", ">", "<=", ">=", "==", "!="]
@@ -35,7 +43,7 @@ def genMIPSCode (icLines, coloredList, spilledList):
     mipsLines.append(scratchText)
 
     count = 0
-    for line in lines:
+    for line in icLines:
         tStr = str()
         if "=" in line:
             if "==" in line:
@@ -55,7 +63,23 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 tStr += "move " + registerMap[coloredList[lhs]] + ", $v0" + "\n"
 
             elif len(tList) == 1:
-                if tList[0].isdigit():
+                if (lhs) in arr_alias_list.values():
+                    if tList[0].isdigit():
+                        tStr = "li $s6, " + str(tList[0]) + "\n"
+                        op1 = "$s6"
+                    else:
+                        op1 = registerMap[coloredList[tList[0]]]
+
+                    tStr += "sw " + op1 + ", 0(" + registerMap[coloredList[lhs]] + ")\n"
+                
+                elif ("arr_"+tList[0]) in arr_dict.values():
+                    tStr += "lw " + registerMap[coloredList[tList[0]]] + ", 0(" + registerMap[coloredList[lhs]] + ")\n"
+                
+                elif (tList[0]) in arr_alias_list.values():
+                    tStr += "lw " + registerMap[coloredList[lhs]] + ", 0(" + registerMap[coloredList[tList[0]]] + ")\n"
+                
+                
+                elif tList[0].isdigit():
                     if coloredList[lhs] == None:
                         tStr += "li $s1, " + str(tList[0]) + "\n"
                     else:
@@ -82,6 +106,7 @@ def genMIPSCode (icLines, coloredList, spilledList):
                     else:
                         tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + registerMap[coloredList[tList[0]]]
                     tStr += "mfhi " + registerMap[coloredList[lhs]] + "\n"
+
                 elif tList[1] == "/":
                     if tList[0].isdigit() and tList[2].isdigit():
                         tStr += "li $s6 " + str(tList[0]) + "\n"
@@ -99,6 +124,34 @@ def genMIPSCode (icLines, coloredList, spilledList):
                     else:
                         tStr += mipsCodeMap[tList[1]] + " " + registerMap[coloredList[tList[2]]] + ", " + registerMap[coloredList[tList[0]]]
                     tStr += "mflo " + registerMap[coloredList[lhs]] + "\n"
+
+                elif tList[1] == "+":
+                    if ("arr_" + tList[0]) in arr_dict.values():
+                        arr_size = size_dict[tList[0]]
+                        tStr += "la $s6, " + str(arr_size) + "\n"
+                        tStr += "lw $s6, 0($s6)\n"
+                        tStr += "mul $s6, $s6, 4\n"
+                        tStr += "bltz " + registerMap[coloredList[tList[2]]] + ", exit\n"
+                        tStr += "bge " + registerMap[coloredList[tList[2]]] + ", $s6, exit\n"
+                        tStr += "la " + registerMap[coloredList[tList[0]]] + ", " +  arr_dict[tList[0]] + "\n"
+                        tStr += "add " + registerMap[coloredList[tList[0]]] + ", " + registerMap[coloredList[tList[0]]] + ", " + registerMap[coloredList[tList[2]]] + "\n"
+                        arr_alias_list[tList[0]] = lhs
+                        tStr += "move " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[0]]] + "\n"
+
+                    else:
+                        if tList[2].isdigit():
+                            op2 = str(tList[2])
+                        else:
+                            op2 = registerMap[coloredList[tList[2]]]
+                            
+                        if tList[0].isdigit():
+                            tStr += "li $s6, " + str(tList[0]) + "\n"
+                            op1 = "$s6"
+                        else:
+                            op1 = registerMap[coloredList[tList[0]]]
+                            
+                        tStr += "add " + registerMap[coloredList[lhs]] + ", " + op1 + ", " + op2 + "\n"
+
                 else:
                     if tList[0].isdigit() and tList[2].isdigit():
                         tStr += "li $s6, " + str(tList[0]) + "\n"
@@ -122,15 +175,23 @@ def genMIPSCode (icLines, coloredList, spilledList):
             elif (tList[0] == "not"):
                 if tList.isdigit():
                     tStr += "li $s7, " + str(tList[1]) + "\n"
-                    tStr += "xori $s7, $s7, 0x0\nslut $s7, 1\n"
+                    tStr += "xori $s7, $s7, 0x0\nsltu $s7, 1\n"
                 else:
-                    tStr += "xori " + registerMap[coloredList[
+                    tStr += "xori " + registerMap[coloredList[tList[1]]] + ", " + registerMap[coloredList[tList[1]]] + ", 0x0\n"
+                    tStr += "sltu " + registerMap[coloredList[lhs]] + ", " + registerMap[coloredList[tList[1]]] + ", 1\n"
 
             elif (tList[0] == "load"):
                 if not lhs in coloredList:
                     coloredList[lhs] = 10 + (count) % 10
                     count += 1
                 tStr += "lw " + registerMap[coloredList[lhs]] + ", " + spilledVars[tList[1]] + "\n"
+
+                
+            elif (tList[0] == "new"):
+                arr_dict[lhs] = "arr_"+lhs
+                size_dict[lhs] = "size_"+lhs
+                data_section = size_dict[lhs] + ":\t.word  " + tList[3] + "\n .align 4\n"
+                data_section += arr_dict[lhs] + ":\t.space  " + str(4 * int(tList[3])) + "\n"
 
             elif (any (op in rhs for op in relop)):
                 tStr = str()
@@ -139,13 +200,15 @@ def genMIPSCode (icLines, coloredList, spilledList):
 
                 tIdx = icLines.index(line)
                 nextLine = icLines[tIdx+1]
+                if not "do_while_lid" in nextLine:
+                    nextLine = icLines[tIdx-2]
                 labelLine = nextLine.split(' ')
                 labelStr = labelLine[len(labelLine) - 1]
 
-                if "goto do_while_labelID" in labelLine:
+                if re.match("do_while_lid", labelStr):
                     opcode = mipsCodeMap[tList[1]]
                 else:
-                    opcode = mipsCodeMap[tList[1]]
+                    opcode = mipsInvCodeMap[tList[1]]
 
                 if tList[0].isdigit():
                     str1 = "li $s6, " + str(tList[0]) + "\n"
@@ -160,20 +223,23 @@ def genMIPSCode (icLines, coloredList, spilledList):
                     op2 = registerMap[coloredList[tList[2]]]
 
                 if str1 and str2:
-                    tStr = str1 + str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr)
+                    tStr = str1 + str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
                 elif str1:
-                    tStr = str1 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr)
+                    tStr = str1 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
                 elif str2:
-                    tStr = str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr)
+                    tStr = str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
                 else:
-                    tStr = opcode + " " + op1 + ", " + op2 + ", " + str(labelStr)
+                    tStr = opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
                 
         elif "print" in line:
             tokens = tokenize.generate_tokens(cStringIO.StringIO(line).readline)
             tList = list()
             for t in tokens:
                 tList.append(t[1])
-            tStr += "move $a0 " + registerMap[coloredList[tList[1]]] + "\n"
+
+            if tList[1] in arr_alias_list.values():
+                tStr += "lw " + registerMap[coloredList[tList[1]]] + ", 0(" + registerMap[coloredList[tList[1]]] + ")\n"
+            tStr += "move $a0, " + registerMap[coloredList[tList[1]]] + "\n"
             tStr += mipsTemplate["print"]
             tStr += mipsTemplate["printLn"]
 
@@ -182,14 +248,14 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 continue
             else:
                 labelStr = line.split(' ')[2]
-                tStr = "b " + labelStr + "\n"
+                tStr = "\n" + "b " + labelStr + "\n"
                 
         elif "label " in line:
             if "if not" in line:
                 continue
             else:
                 labelStr = line.split(' ')[1]
-                tStr = labelStr + ":\n"
+                tStr = "\n" + labelStr + ":\n"
 
         elif "{" in line or "}" in line:
             continue
@@ -199,17 +265,18 @@ def genMIPSCode (icLines, coloredList, spilledList):
             if var.isdigit():
                 tStr += "li $s0, " + str(var) + "\n"
             else:
-                tStr += "move $s0, $s1\n"
+                tStr += "move $s1, $s0\n"
             
             tStr += "sw $s0, " + spilledVars[var] + "\n"
 
-        mipsLines.append("\t")
         mipsLines.append(tStr)
 
     mipsLines.append(mipsTemplate["exit"])
+    scratchText = str(".data\n")
+    mipsLines.append(scratchText)
+    if data_section:
+        mipsLines.append(data_section)
     if spilledVars:
-        scratchText = str(".data\n")
-        mipsLines.append(scratchText)
         scratchText = str()
         for var in spilledVars:
             scratchText += spilledVars[var] + ":\t .word 0\n"
@@ -218,14 +285,16 @@ def genMIPSCode (icLines, coloredList, spilledList):
 
 
 if __name__ == "__main__":
-    with open("test.ic") as f:
-        lines = f.readlines()
-    #with open("test2.ic") as f:
+    #with open("test.ic") as f:
     #    lines = f.readlines()
+    with open("test2.ic") as f:
+        lines = f.readlines()
     
-    coloredList = {'t14': 14, 't15': 13, 't16': 12, 't17': 0, 't10': 11, 't11': 1, 't12': 10, 't13': 9, 't18': 2, 't19': 8, 'a': 7, 'c': 6, 'b': 5, 't8': 3, 't9': 4, 't6': 3, 't7': 2, 't4': 4, 't5': 1, 't2': 5, 't3': 0, 't1': 6, 's': 7, 't20': 8}
+    #coloredList = {'t14': 14, 't15': 13, 't16': 12, 't17': 0, 't10': 11, 't11': 1, 't12': 10, 't13': 9, 't18': 2, 't19': 8, 'a': 7, 'c': 6, 'b': 5, 't8': 3, 't9': 4, 't6': 3, 't7': 2, 't4': 4, 't5': 1, 't2': 5, 't3': 0, 't1': 6, 's': 7, 't20': 8}
 
-    #coloredList = {'a': 3, 'b': 2, 't2': 1, 't3': 0}
+
+    coloredList = {'a': 4, 'b': 5, 'd': 3, 't4': 2, 't5': 6, 't2': 7, 't3': 1, 't1': 0}
+    #coloredList = {'a': 3, 'b': 4, 'd': 2, 't2': 5, 't3': 1, 't1': 0}
     spilledList = []
     mipsLines = genMIPSCode(lines, coloredList, spilledList)
     print "MIPS code: "

@@ -262,7 +262,42 @@ def wellformed(node,decl,defined):
     iterable_list = node.children[:]
     
     
-    if(node.type == "if") or (node.type == "while"):
+    if(node.type == "if"):
+        if(len(node.children) == 3):
+            temp_decl = decl[:]
+            temp_defined = defined[:]
+            wellformed(node.children[0],temp_decl,temp_defined)
+            wellformed(node.children[1],temp_decl,temp_defined)
+            #print temp_decl
+            #print temp_defined
+            set_def = set(temp_defined).difference(set(defined))
+            #print set_def
+            #print temp_decl
+            set_dec = set(temp_decl).difference(set(decl))
+            #print set_dec
+            set_1 = set_def.difference(set_dec)
+            #print set_1
+        
+            wellformed(node.children[2],temp_decl,temp_defined)
+            #print temp_decl
+            #print temp_defined
+            set_def2 = set(temp_defined).difference(set(defined))
+            set_dec2 = set(temp_decl).difference(set(decl))
+            set_2 = set_def2.difference(set_dec2)
+        # print set_2
+        
+        else:
+            temp_decl = decl[:]
+            temp_defined = defined[:]
+            #print decl[:]
+            for child in iterable_list:
+                #print child
+                wellformed(child,temp_decl,temp_defined)
+            #print decl[:]
+        return
+    
+    
+    elif(node.type == "while"):
         temp_decl = decl[:]
         temp_defined = defined[:]
         #print decl[:]
@@ -273,10 +308,10 @@ def wellformed(node,decl,defined):
         return
     
     elif(node.type == "do"):
-        print "here"
+        #print "here"
         temp_decl = decl[:]
         for child in iterable_list:
-            # print decl[:]
+            #print defined[:]
             wellformed(child,temp_decl,defined)
         # print defined[:]
         #print decl[:]
@@ -299,49 +334,61 @@ def wellformed(node,decl,defined):
     elif(node.type == "Stmt"):
         if(node.children[0].type == "LCURLY"):
             temp_decl = decl[:]
-            temp_defined = defined[:]
+          
             #print decl[:]
             for child in iterable_list:
-                wellformed(child,temp_decl,temp_defined)
-            #print decl[:]
+                wellformed(child,temp_decl,defined)
+
             return
 
 
     
     elif(node.type == "Var"):
-        id1 = node.children[0].leaf
-        decl.append(id1)
-        #print id
+        id = node.children[0].leaf
+        decl.append(id)
+        #print decl[:]
         iterable_list = node.children[1:]
     
     elif node.type == "ID":
-        id1 = node.leaf
-        if not id1 in decl:
-            print "Wellformed ERROR: Variable \"" + str(id1) + "\" NOT DECLARED before use"
+        id = node.leaf
+        #print id
+        if not id in decl:
+            print "Wellformed ERROR: Variable \"" + id + "\" NOT DECLARED before use"
             sys.exit(-1)
             return []
-        elif not id1 in defined:
-            print "Wellformed ERROR: Variable \"" + str(id1) + "\" NOT DEFINED before use"
+        elif not id in defined:
+            print "Wellformed ERROR: Variable \"" + id + "\" NOT DEFINED before use"
             sys.exit(-1)
             return []
     
     elif node.type == "SEEq":
-        #print "here"
-        id1 = node.children[0].leaf
-        if not id1 in decl:
-            print "Wellformed ERROR: Variable \"" + str(id1) + "\" NOT DECLARED before use"
-            sys.exit(-1)
-            return []
-        elif id1 in defined:
-            pass
-        else:
-            defined.append(id)
-#print id
+        
         iterable_list = node.children[1:]
+        for child in iterable_list:
+            #print child.type
+            wellformed(child,decl,defined)
+        #print "here"
+        if node.children[0].leaf == None:
+            wellformed(node.children[0],decl,defined)
+
+        else :
+            id = node.children[0].leaf
+            if not id in decl:
+                print "Wellformed ERROR: Variable \"" + id + "\" NOT DECLARED before use"
+                sys.exit(-1)
+                return []
+            elif id in defined:
+                pass
+            else:
+                defined.append(id)
+        return
+        #print "-----" + id
+        #print defined[:]
+        
     
     
     for child in iterable_list:
-        print child.type
+        #print child.type
         wellformed(child,decl,defined)
     
     return
@@ -350,52 +397,45 @@ def wellformed(node,decl,defined):
 
 
 if __name__ == "__main__":
-    s = ''' int a,b;
-            int d,x;
-        int i;
-        int a[];
-            b = 4;
-        
-        a = new int[10];
-            if(b==5)
-            then
-            {
-                if(b==5)
-                then
-                {
-                int c;
-            i=0;
-                c = a[i];
-                c=3;
-                b=6;}
-            
-            }
-        
-       
-        for (a = 1; a < b; a++)
-        {
-            int x;
-            b++;
-            
-            x=1;
-            x++;
-        
+    s = ''' int a, b, c, s;
+        int d[];
+        d = new int [10];
+        a = input();
+        if(3<4) then {
+        if(a==10) then {
+        a = 5;}
+        a = a + 5 * 2;}
+        b= 2+-4;
+        c= b+2;
+        s=3;
+        if (b < 3) then {
+        // Comment 1
+        c = a * 2;
         }
-        
+        else {
+        c = a * 1;
+        }
+        c = 2;
+        while (c < 3) do
+        {
+        b = b + 2;
+        a = a + 3;
+        c = c + 1;
+        }
+        c = 4;
         do {
-        int e;
-        d = 1;
-        //a++;
-        e=1;
-        e++;
-        //l = 3;
+        a = 3 + a;
+        b = 5 * 2;
+        d[a] = b + 2;
+        } while (c < 3);
         
-        } while(b > 3);
-       //x++;
-        
-        
-        //dfsdfs
-       // d++;
+        for (a = 3; a < 10; a++)
+        {
+        b = b + 3;
+        b = b + d[a];
+        }
+        print (a);
+        print (c + b);
             '''
     result = parser.parse(s)
     astRoot = yacc.parse(s)

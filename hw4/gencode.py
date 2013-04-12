@@ -315,7 +315,12 @@ def se_extractor(node):
 
 def place_seopt(blk_list, se_str):
     new_list = blk_list[::-1]
-    idx = new_list.index("}\n")
+    if "}\n" in new_list:
+        idx = new_list.index("}\n")
+    elif "}" in new_list:
+        idx = new_list.index("}")
+    else:
+        idx = 0
     if post_dec_list:
         new_list.insert(idx+1, post_dec_list.pop())
     else:
@@ -373,11 +378,11 @@ def gencode(node):
         blk_str = ae_extractor(node.children[0])
         label_str = "if not " + tVar + str(tID - 1) + " goto label end_while_lid" + str(end_while_lid) + "\n"
         end_while_lid += 1
-        temp_blk.append(blk_str)
         temp_blk.append(label_str)
         label_str = "label while_lid" + str(while_lid) + " :\n"
         while_lid += 1
         temp_blk.append(label_str)
+        temp_blk.append(blk_str)
         blk2 = gencode(node.children[1])
         label_str = "goto label while_lid" + str(while_lid - 1) + "\n"
         while_lid += 1
@@ -400,13 +405,13 @@ def gencode(node):
         blk_str = se_extractor(node.children[0])
         temp_blk.append(blk_str)
         blk_str = ae_extractor(node.children[2])
-        temp_blk.append(blk_str)
         label_str = "if not " + tVar + str(tID - 1) + " goto label end_for_lid" + str(end_for_lid) + "\n"
         temp_blk.append(label_str)
         end_for_lid += 1
         label_str = "label for_lid" + str(for_lid) + " :\n"
         for_lid += 1
         temp_blk.append(label_str)
+        temp_blk.append(blk_str)
         blk2 = gencode(node.children[5])
         blk_str = se_extractor(node.children[4])
         if not blk_str is None:
@@ -459,7 +464,13 @@ def gencode(node):
     elif node.type is "print":
         str1 = str(ae_extractor(node.children[0]))
         if "\n" in str1:
-            blk_str = str1 + "print " + tVar + str(tID - 1) + "\n"
+            idx = str1.rfind('\n')
+            str2 = str1[idx+1:len(str1)]
+            str3 = str1[0:idx+1]
+            if str2:
+                blk_str = str3 + "print " + str2 + "\n"
+            else:
+                blk_str = str3 + "print " + tVar + str(tID - 1) + "\n"
         else:
             blk_str = "print " + str1
         temp_blk.append(blk_str)
