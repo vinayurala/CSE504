@@ -13,7 +13,10 @@ reserved = {
     'false' : 'FALSE',
     'new'   : 'NEW',
     'bool'  : 'BOOL',
-    'int'   : 'INT'
+    'int'   : 'INT',
+    'class' : 'CLASS',
+    'return': 'RETURN',
+    'void'  : 'VOID'
 }
 
 # List of token names.   
@@ -45,7 +48,8 @@ tokens = [
           'DEC',
           'LSQR',
           'RSQR',
-          'COMMA'
+          'COMMA',
+          'DOT'
           
           ] + list(reserved.values())
 
@@ -84,6 +88,8 @@ t_LSQR = r'\['
 t_RSQR = r'\]'
 t_COMMA = r'\,'
 
+t_DOT = r'\.'
+
 # A regular expression rule with some action code
 def t_NUMBER(t):
     r'\d+'
@@ -120,6 +126,8 @@ if __name__ == "__main__":
            f = new int;
            int g = 5;
            bool h = true;
+           class a;
+            a.b
            print(d - 4 * a);'''
 
     lexer.input(stmt)

@@ -20,7 +20,7 @@ precedence = (('left', 'OR'),
 
 
 class Node:
-    def __init__(self,type,children=None,leaf=None):
+    def __init__(self,type,children=None,leaf=None,check = None):
         self.type = type
         if children:
             self.children = children
@@ -47,20 +47,99 @@ class Node:
     edges = edges + descend(i)
     return edges
     """
+###########################################################################
+def p_pgm_decl(p):
+    'Pgm : DeclSeq'             # For *
+    p[0] = Node("Pgm", children = [p[1]])
 
-##################
-def p_pgm_stmtseq(p):
-    'Pgm : DeclSeq StmtSeq '
-    p[0] = Node("Pgm", children = [p[1], p[2]])
+def p_declseq(p):
+    'DeclSeq : Decl DeclSeq'
+    p[0] = Node("DeclSeq", children = [p[1], p[2]])
+
+def p_declseq_null(p):
+    'DeclSeq : '
+    p[0] = Node("DeclSeq")
+
+def p_decl(p):
+    '''Decl : VarDecl
+          | FunDecl
+          | ClassDecl'''
+    p[0] = Node("Decl", children = [p[1]])
+
+def p_vardecl(p):
+    'VarDecl : Type VarList SCOLON'
+    p[3] = Node("SEMI", leaf = p[3])
+    p[0] = Node("VarDecl", children = [p[1], p[2], p[3]])
+
+def p_fundecl(p):                                                   #Used for ?
+    '''FunDecl : Type ID LPAREN Formals RPAREN Stmt                     
+               | Type ID LPAREN RPAREN Stmt'''
+    p[2] = Node("ID", leaf = p[2])
+    p[3] = Node("LPAREN", leaf = p[3])
+    if len(p) == 7:
+        p[5] = Node("RPAREN", leaf = p[5])
+        p[0] = Node("FunDecl", children = [p[1], p[2], p[3], p[4], p[5], p[6]])
+    else:
+        p[4] = Node("RPAREN", leaf = p[4])
+        p[0] = Node("FunDecl", children = [p[1], p[2], p[3], p[4], p[5]])           # Need to differentiate?
 
 
-def p_stmtseq_stmt_stmtseq(p):
-    'StmtSeq : Stmt StmtSeq'
-    p[0] = Node("StmtSeq",children = [p[1],p[2]])
+def p_classdecl(p):
+    'ClassDecl : CLASS ID LCURLY VarDeclSeq RCURLY '
+    p[2] = Node("ID", leaf = p[2])
+    p[3] = Node("LCURLY", leaf = p[3])
+    p[5] = Node("RCURLY", leaf = p[5])
+    p[0] = Node("ClassDecl", children = [p[2], p[3], p[4], p[5]])
 
-def p_stmtseq_null(p):
-    'StmtSeq : '
-    p[0] = Node("StmtSeq")
+
+def p_vardeclseq(p):                                                # for Decl in classes
+    'VarDeclSeq : VarDecl VarDeclSeq'
+    p[0] = Node("VarDeclSeq", children = [p[1], p[2]])
+
+def p_vardeclseq_null(p):
+    'VarDeclSeq : '
+    p[0] = Node("VarDeclSeq")
+
+def p_type(p):
+    '''Type : INT
+            | BOOL
+            | VOID
+            | Type LSQR RSQR'''
+    if len(p) == 2:
+        p[0] = Node("Type", leaf = p[1])
+    else:
+        p[2] = Node("LSQR", leaf = p[2])
+        p[3] = Node("RSQR", leaf = p[3])
+        p[0] = Node("Type", children = [p[1], p[2], p[3]])
+
+def p_type_id(p):
+    'Type : Err ID'
+    p[2] = Node("ID", leaf = p[2])
+    p[0] = Node("Type", children = [p[2]])
+
+def p_err(p):
+    'Err :'
+
+
+def p_varlist(p):
+    '''VarList : ID COMMA VarList
+               | ID '''
+    p[1] = Node("ID", leaf = p[1])
+    if len(p) == 2:
+        p[0] = Node("VarList", children = [p[1]])
+    else:
+        p[2] = Node("COMMA", leaf = p[2])
+        p[0] = Node("VarList", children = [p[1], p[2], p[3]])
+
+def p_formals(p):
+    '''Formals : Type ID COMMA Formals
+               | Type ID'''
+    p[2] = Node("ID", leaf = p[2])
+    if len(p) == 3:
+        p[0] = Node("Formals", children = [p[1], p[2]])
+    else:
+        p[3] = Node("COMMA", leaf = p[3])
+        p[0] = Node("Formals", children = [p[1], p[2], p[3], p[4]])
 
 def p_stmt(p):
     '''Stmt : SE SCOLON
@@ -75,28 +154,21 @@ def p_stmt(p):
         p[0] = Node("Stmt", children = [p[1], p[2]])
     elif len(p) == 5:
         if ("if" in p):
-            p[0] = Node("if", [p[2], p[4]], p[1])
+            p[0] = Node("if", children = [p[2], p[4]], leaf = p[1])
         else:
-            p[0] = Node("while", [p[2], p[4]], p[1])
+            p[0] = Node("while", children = [p[2], p[4]], leaf = p[1])
     elif len(p) == 6:
         p[5] = Node("SEMI", leaf = p[5])
         if p[1] == "do":
-            p[0] = Node("do", [p[2], p[4], p[5]], p[1])
+            p[0] = Node("do", children = [p[2], p[4], p[5]],leaf =  p[1])
         else:
-            p[0] = Node("print", [p[3],p[5]], p[1])
+            p[0] = Node("print", children = [p[3],p[5]], leaf = p[1])
     elif len(p) == 7:
-        p[0] = Node("if", [p[2], p[4], p[6]], p[1])
+        p[0] = Node("if", children = [p[2], p[4], p[6]], leaf = p[1])
     elif len(p) == 10:
         p[4] = Node("SEMI", leaf = p[4])
         p[6] = Node("SEMI", leaf = p[6])
-        p[0] = Node("for", [p[3], p[4], p[5], p[6], p[7], p[9]], p[1])
-
-
-def p_stmt_curly(p):
-    'Stmt : LCURLY DeclSeq StmtSeq RCURLY'
-    p[1] = Node("LCURLY", leaf = p[1])
-    p[4] = Node("RCURLY", leaf = p[4])
-    p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4]])
+        p[0] = Node("for", children = [p[3], p[4], p[5], p[6], p[7], p[9]], leaf = p[1])
 
 def p_seopt(p):
     '''SEOpt : SE
@@ -106,6 +178,7 @@ def p_seopt(p):
     else:
         p[0] = Node("SEOpt", children = [p[1]])
 
+
 def p_aeopt(p):
     '''AEOpt : AE
         AEOpt : '''
@@ -114,37 +187,34 @@ def p_aeopt(p):
     else:
         p[0] = Node("AEOpt", children = [p[1]])
 
-def p_declseq(p):
-    'DeclSeq : Decl DeclSeq'
-    p[0] = Node("DeclSeq", children = [p[1], p[2]])
 
-def p_declseq_null(p):
-    'DeclSeq : '
-    p[0] = Node("DeclSeq")
 
-def p_decl(p):
-    'Decl : Type VarList SCOLON'
-    p[3] = Node("SEMI", leaf = p[3])
-    p[0] = Node("Decl", children = [p[1], p[2], p[3]])
+def p_stmtseq(p):
+    'StmtSeq : Stmt StmtSeq'
+    p[0] = Node("StmtSeq",children = [p[1],p[2]])
 
-def p_type(p):
-    '''Type : INT
-        | BOOL'''
-    p[0] = Node("Type", leaf = p[1])
+def p_stmtseq_null(p):
+    'StmtSeq : '
+    p[0] = Node("StmtSeq")
 
-def p_varlist(p):
-    '''VarList : Var COMMA VarList
-        VarList : Var'''
-    if len(p) == 2:
-        p[0] = Node("VarList", children = [p[1]])
-    elif len(p) == 4:
-        p[2] = Node("COMMA", leaf = p[2])
-        p[0] = Node("VarList", children = [p[1], p[2], p[3]])
+def p_stmt_curly(p):
+    'Stmt : LCURLY VarDeclSeq StmtSeq RCURLY'
+    p[1] = Node("LCURLY", leaf = p[1])
+    p[4] = Node("RCURLY", leaf = p[4])
+    p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4]])
 
-def p_var(p):
-    'Var : ID DimStar'
-    p[1] = Node("ID", leaf = p[1])
-    p[0] = Node("Var", children = [p[1], p[2]])
+def p_stmt_return(p):
+    '''Stmt : RETURN AE SCOLON
+            | RETURN SCOLON'''
+    if len(p) == 3:
+        p[2] = Node("SEMI", leaf = p[2])
+        p[1] = Node("RETURN", leaf = p[1])
+        p[0] = Node("Stmt", children = [p[1], p[2]])
+    else:
+        p[3] = Node("SEMI", leaf = p[3])
+        p[1] = Node("RETURN", leaf = p[1])
+        p[0] = Node("Stmt", children = [p[1], p[2], p[3]])
+
 
 def p_se(p):
     'SE : Lhs EQ AE'
@@ -164,30 +234,16 @@ def p_se_pre(p):
     p[0] = Node("SEPre", children = [p[1], p[2]])
 
 def p_lhs(p):
-    '''Lhs : ID
-        | Lhs LSQR AE RSQR'''
-    if len(p) == 2:
-        p[0] = Node("ID", leaf = p[1])
-    elif len(p) == 5:
-        p[2] = Node("LSQR", leaf = p[2])
-        p[4] = Node("RSQR", leaf = p[4])
-        p[0] = Node("Lhs", children = [p[1], p[2], p[3], p[4]])
+    '''Lhs : FieldAccess
+           | ArrayAccess'''
+    p[0] = Node("Lhs", children = [p[1]])
 
-def p_dimexpr(p):
-    'DimExpr : LSQR AE RSQR'
-    p[1] = Node("LSQR", leaf = p[1])
-    p[3] = Node("RSQR", leaf = p[3])
-    p[0] = Node("DimExpr", children = [p[1], p[2], p[3]])
+def p_ae(p):
+    '''AE : Primary
+          | SE
+          | NewArray'''
+    p[0] = Node("AE", children = [p[1]])
 
-def p_dimstar(p):
-    '''DimStar : LSQR RSQR DimStar
-        DimStar : '''
-    if len(p) == 1:
-        p[0] = Node("DimStar", children = [])
-    elif len(p) == 4:
-        p[1] = Node("LSQR", leaf = p[1])
-        p[2] = Node("RSQR", leaf = p[2])
-        p[0] = Node("DimStar", children = [p[1], p[2], p[3]])
 
 def p_ae_binop(p):
     '''AE : AE PLUS AE
@@ -203,42 +259,111 @@ def p_ae_binop(p):
         | AE GT AE
         | AE GTEQ AE
         | AE LTEQ AE '''
-    p[0] = Node("Binop", [p[1], p[3]], p[2])
+    p[0] = Node("Binop", children = [p[1], p[3]], leaf = p[2])
 
 def p_ae_uminus(p):
     'AE : MINUS AE %prec UMINUS'
-    p[0] = Node("Unop", [p[2]], "UMINUS")
+    p[0] = Node("Unop", children = [p[2]],leaf = "UMINUS")
 
 def p_ae_not(p):
     'AE : NOT AE'
     p[0] = Node("Unop", children = [p[2]], leaf = "NOT")
 
-def p_ae_lhs(p):
-    'AE : Lhs'
-    p[0] = p[1]
-
-def p_ae_se(p):
-    'AE : SE'
-    p[0] = p[1]
-
-def p_ae_ip(p):
-    'AE : INPUT LPAREN RPAREN'
+def p_primary_ip(p):
+    'Primary : INPUT LPAREN RPAREN'
     p[0] = Node("Input", leaf = p[1])
 
-def p_ae_aeparan(p):
-    'AE : LPAREN AE RPAREN'
-    p[0] = Node("AE", children = [p[2]])
+def p_primary_aeparan(p):                           ###########need Parentheses?
+    'Primary : LPAREN AE RPAREN'
+    p[0] = Node("Primary", children = [p[2]])
 
-def p_ae_new_expr(p):
-    'AE : NEW Type DimExpr DimStar'
-    p[1] = Node("NEW", leaf = p[1])
-    p[0] = Node("AE", children = [p[1], p[2], p[3], p[4]])
+def p_primary_misc(p):
+    '''Primary : FieldAccess
+                | ArrayAccess
+                | FunctionCall
+                | NewObject '''
+    p[0] = Node("Primary", children = [p[1]])
 
-def p_ae_misc(p):
-    '''AE : TRUE
+def p_primary_const(p):
+    '''Primary : TRUE
         | FALSE
         | NUMBER '''
-    p[0] = Node("IntConst", leaf = p[1])
+    if ("true" in p):
+        p[0] = Node("bool", leaf = p[1])    
+    elif ("false" in p):
+        p[0] = Node("bool", leaf = p[1])
+    else:
+        p[0] = Node("IntConst", leaf = p[1])
+
+def p_arrayaccess(p):                           ##### Need Square Brackets?
+    'ArrayAccess : Primary LSQR AE RSQR'
+    p[0] = Node("ArrayAccess", children = [p[1], p[3]])
+
+def p_FieldAccess(p):
+    '''FieldAccess : Primary DOT ID
+                    | ID '''
+    if len(p) == 2:
+        p[1] = Node("ID", leaf = p[1])
+        p[0] = Node("FieldAccess", children = [p[1]])
+    else:
+        p[3] = Node("ID", leaf = p[3])
+        p[2] = Node("DOT", leaf = p[2])
+        p[0] = Node("FieldAccess", children = [p[1], p[2], p[3]])
+
+def p_functioncall(p):
+    '''FunctionCall : ID LPAREN Args RPAREN
+                    | ID LPAREN RPAREN'''
+    p[1] = Node("ID", leaf = p[1])
+    p[2] = Node("LPAREN", leaf = p[2])
+    if len(p) == 4:
+        p[3] = Node("RPAREN", leaf = p[3])
+        p[0] = Node("FunctionCall", children = [p[1], p[2], p[3]])
+    else:
+        p[4] = Node("RPAREN", leaf = p[4])
+        p[0] = Node("FunctionCall", children = [p[1], p[2], p[3], p[4]])
+
+def p_args(p):
+    '''Args : AE COMMA Args
+            | AE'''
+    if len(p) == 2:
+        p[0] = Node("Args", children = [p[1]])
+    else:
+        p[2] = Node("COMMA", leaf = p[2])
+        p[0] = Node("Args", children = [p[1], p[2], p[3]])
+
+def p_newobject(p):
+    'NewObject : NEW ID LPAREN RPAREN'              ##### Do I need it?
+    p[1] = Node("NEW", leaf = p[1])
+    p[2] = Node("ID", leaf = p[2])
+    p[3] = Node("LPAREN", leaf = p[3])
+    p[4] = Node("RPAREN", leaf = p[4])
+    p[0] = Node("NewObject", children = [p[1], p[2], p[3], p[4]])
+
+def p_newarray(p):
+    'NewArray : NEW Type DimExpr DimSeq'                    # For DimSeq
+    p[1] = Node("NEW", leaf = p[1])
+    p[0] = Node("NewArray", children = [p[1], p[2], p[3], p[4]])
+
+def p_dimseq(p):
+    'DimSeq : Dim DimSeq'
+    p[0] = node("DimSeq", children = [p[1], p[2]])
+
+def p_dimseq_null(p):
+    'DimSeq :'
+    p[0] = node("DimSeq")
+
+def p_dimexpr(p):
+    'DimExpr : LSQR AE RSQR'
+    p[1] = Node("LSQR", leaf = p[1])
+    p[3] = Node("RSQR", leaf = p[3])
+    p[0] = node("DimExpr", children = [p[1], p[2], p[3]])
+
+def p_dim(p):
+    'Dim : LSQR RSQR'
+    p[1] = Node("LSQR", leaf = p[1])
+    p[2] = Node("RSQR", leaf = p[2])
+    p[0] = node("Dim", children = [p[1], p[2]])
+
 
 def p_error(p):
     if p==None:
@@ -253,10 +378,13 @@ parser = yacc.yacc()
 
 decl = list()
 defined = list()
+parent = None
+done = 0
+vars = {}
 
+##############################################################################################
 
-
-def wellformed(node,decl,defined):
+def wellformed(node,decl,defined,parent):
     #print node
     #print node.type
     iterable_list = node.children[:]
@@ -266,8 +394,9 @@ def wellformed(node,decl,defined):
         if(len(node.children) == 3):
             temp_decl = decl[:]
             temp_defined = defined[:]
-            wellformed(node.children[0],temp_decl,temp_defined)
-            wellformed(node.children[1],temp_decl,temp_defined)
+            temp_parent = node.type
+            wellformed(node.children[0],temp_decl,temp_defined,temp_parent)
+            wellformed(node.children[1],temp_decl,temp_defined,temp_parent)
             #print temp_decl
             #print temp_defined
             set_def = set(temp_defined).difference(set(defined))
@@ -278,7 +407,7 @@ def wellformed(node,decl,defined):
             set_1 = set_def.difference(set_dec)
             #print set_1
         
-            wellformed(node.children[2],temp_decl,temp_defined)
+            wellformed(node.children[2],temp_decl,temp_defined,temp_parent)
             #print temp_decl
             #print temp_defined
             set_def2 = set(temp_defined).difference(set(defined))
@@ -290,9 +419,10 @@ def wellformed(node,decl,defined):
             temp_decl = decl[:]
             temp_defined = defined[:]
             #print decl[:]
+            temp_parent = node.type
             for child in iterable_list:
                 #print child
-                wellformed(child,temp_decl,temp_defined)
+                wellformed(child,temp_decl,temp_defined,temp_parent)
             #print decl[:]
         return
     
@@ -301,43 +431,47 @@ def wellformed(node,decl,defined):
         temp_decl = decl[:]
         temp_defined = defined[:]
         #print decl[:]
+        temp_parent = node.type
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined)
+            wellformed(child,temp_decl,temp_defined,temp_parent)
         #print decl[:]
         return
     
     elif(node.type == "do"):
         #print "here"
         temp_decl = decl[:]
+        temp_parent = node.type
         for child in iterable_list:
             #print defined[:]
-            wellformed(child,temp_decl,defined)
+            wellformed(child,temp_decl,defined,temp_parent)
         # print defined[:]
         #print decl[:]
             #print defined[:]
         return
 
     elif(node.type == "for"):
+        temp_parent = node.type
         if(node.children[0].type == "SEOpt"):
-            wellformed(node.children[0],decl,defined)
+            wellformed(node.children[0],decl,defined,temp_parent)
             iterable_list = node.children[1:]
         temp_decl = decl[:]
         temp_defined = defined[:]
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined)
+            wellformed(child,temp_decl,temp_defined,temp_parent)
         #print decl[:]
         return
 
 
     elif(node.type == "Stmt"):
+        temp_parent = node.type
         if(node.children[0].type == "LCURLY"):
             temp_decl = decl[:]
           
             #print decl[:]
             for child in iterable_list:
-                wellformed(child,temp_decl,defined)
+                wellformed(child,temp_decl,defined,temp_parent)
 
             return
 
@@ -362,14 +496,14 @@ def wellformed(node,decl,defined):
             return []
     
     elif node.type == "SEEq":
-        
+        temp_parent = node.type
         iterable_list = node.children[1:]
         for child in iterable_list:
             #print child.type
-            wellformed(child,decl,defined)
+            wellformed(child,decl,defined,temp_parent)
         #print "here"
         if node.children[0].leaf == None:
-            wellformed(node.children[0],decl,defined)
+            wellformed(node.children[0],decl,defined,temp_parent)
 
         else :
             id = node.children[0].leaf
@@ -386,58 +520,288 @@ def wellformed(node,decl,defined):
         #print defined[:]
         
     
+    temp_parent = node.type
+    for child in iterable_list:
+        #print child.type
+        wellformed(child,decl,defined,temp_parent)
+    
+    return
+################################################################################
+
+def ismain(node):
+    iterable_list = node.children[:]
+    if node.type == "FunDecl":
+        if node.children[1].leaf == "main" and node.children[0].leaf == "void" and node.children[3].type == "RPAREN":
+            global done
+            done = 1
+
+    for child in iterable_list:
+        #print child.type
+        ismain(child)
+    return
+################################################################################
+
+def isreturn(node):
+    iterable_list = node.children[:]
+    if node.type == "FunDecl":
+        found = 0
+        parent = node.type
+        checkreturn(node,found,parent)
+        if found == 0:
+            print "function ERROR: Return Not Found in every control flow path"
+        return
     
     for child in iterable_list:
         #print child.type
-        wellformed(child,decl,defined)
+        ismain(child)
+    return
+################################################################################
+
+def checkreturn(node,found,parent):
+    iterable_list = node.children[:]
+    
+    
+    if(node.type == "if"):
+        if(len(node.children) == 3):
+            temp_found = found
+            checkreturn(node.children[1],temp_found,temp_parent)
+            if temp_found == 0:
+                return
+            temp_found = found
+            checkreturn(node.children[2],temp_found,temp_parent)
+            if temp_found == 0:
+                return
+            found = 1
+            return
+        else:
+            return
+
+    elif(node.type == "while" or node.type == "for"):
+        return
+    
+    elif(node.type == "do"):
+        #print "here"
+        for child in iterable_list:
+            #print defined[:]
+            temp_parent = node.type
+            checkreturn(child,found,temp_parent)
+        # print defined[:]
+        #print decl[:]
+        #print defined[:]
+        return
+                
+    elif(node.type == "Stmt" and node.children[0].leaf == "return"):
+        found = 1
+        return
+
+
+
+    
+    elif(node.type == "Stmt"):
+        temp_parent = node.type
+        if(node.children[0].type == "LCURLY"):
+            for child in iterable_list:
+                checkreturn(child,found,parent)
+            
+            return
+
+    for child in iterable_list:
+        checkreturn(child,found,parent)
     
     return
 
+################################################################################
 
 
+def welltyped(node,vars):
+
+    if node.type == "IntConst":
+        node.check = "int"
+        return
+
+    elif node.type == "bool":
+        node.check = "bool"
+        return
+
+    elif node.type == "VarDecl":
+        if node.children[0].leaf == "int" or node.children[0].leaf == "bool":
+            type = node.children[0].leaf
+            varnode = node.children[1]
+            while (len(varnode.children) != 1):
+                vars[varnode.children[0].leaf] = type
+                varnode = varnode.children[2]
+            vars[varnode.children[0].leaf] = type
+            node.check = type
+        return
+
+    elif node.type == "Unop":
+        welltyped(node.children[0],vars)
+        if node.leaf == "UMINUS":
+            if node.children[0].check == "int":
+                node.check = "int"
+            else:
+                node.check = "error"
+        else:
+            if node.children[0].check == "bool":
+                node.check = "bool"
+            else:
+                node.check = "error"
+        return
+
+    elif node.type == "Binop":
+        welltyped(node.children[0],vars)
+        welltyped(node.children[1],vars)
+        if node.leaf in ["+", "-", "*", "/", "%"]:
+            if node.children[0].check == "int" and node.children[1].check == "int":
+                node.check = "int"
+            else:
+                node.check = "error"
+
+        elif node.leaf in ["==", "!="]:
+            if node.children[0].check == "int" and node.children[1].check == "int":
+                node.check = "bool"
+            elif node.children[0].check == "bool" and node.children[1].check == "bool":
+                node.check = "bool"
+            else:
+                node.check = "error"
+
+        elif node.leaf in ["<", ">", "<=", ">="]:
+            if node.children[0].check == "int" and node.children[1].check == "int":
+                node.check = "bool"
+            else:
+                node.check = "error"
+
+        elif node.leaf in ["||", "&&"]:
+            if node.children[0].check == "bool" and node.children[1].check == "bool":
+                node.check = "bool"
+            else:
+                node.check = "error"
+        return
+
+
+    elif node.type == "SEEq":
+        welltyped(node.children[0],vars)
+        welltyped(node.children[2],vars)
+        if node.children[0].check == node.children[2].check:
+            node.check = node.children[2].check
+        else:
+            node.check = "error"
+        return
+
+
+    elif node.type == "SEPost":
+        welltyped(node.children[0],vars)
+        if node.children[0].check == "int":
+            node.check = "int"
+        else:
+            node.check = "error"
+        return
+
+    elif node.type == "SEPre":
+        welltyped(node.children[1],vars)
+        if node.children[1].check == "int":
+            node.check = "int"
+        else:
+            node.check = "error"
+        return
+
+    elif node.type == "print":
+        welltyped(node.children[0],vars)
+        if node.children[0].check != "int":
+            node.check = "error"
+        return
+
+    elif node.type == "if":
+        iterable_list = node.children[:]
+        for child in iterable_list:
+            welltyped(child,vars)
+        if node.children[0].check != "bool":
+            node.check = "error"
+        for child in iterable_list:
+            if child.check == "error":
+                node.check = "error"
+        return
+
+    elif node.type == "while":
+        iterable_list = node.children[:]
+        for child in iterable_list:
+            welltyped(child,vars)
+        if node.children[0].check != "bool":
+            node.check = "error"
+        for child in iterable_list:
+            if child.check == "error":
+                node.check = "error"
+        return
+
+    elif node.type == "do":
+        iterable_list = node.children[:]
+        for child in iterable_list:
+            welltyped(child,vars)
+        if node.children[1].check != "bool":
+            node.check = "error"
+        for child in iterable_list:
+            if child.check == "error":
+                node.check = "error"
+        return
+
+
+
+################################################################################
 
 if __name__ == "__main__":
-    s = ''' int a, b, c, s;
-        int d[];
-        d = new int [10];
-        a = input();
-        if(3<4) then {
-        if(a==10) then {
-        a = 5;}
-        a = a + 5 * 2;}
-        b= 2+-4;
-        c= b+2;
-        s=3;
-        if (b < 3) then {
-        // Comment 1
-        c = a * 2;
-        }
-        else {
-        c = a * 1;
-        }
-        c = 2;
-        while (c < 3) do
-        {
-        b = b + 2;
-        a = a + 3;
-        c = c + 1;
-        }
-        c = 4;
-        do {
-        a = 3 + a;
-        b = 5 * 2;
-        d[a] = b + 2;
-        } while (c < 3);
+    s = '''
+        int a,b,i,c;
+        bool x,y,z;
         
-        for (a = 3; a < 10; a++)
+        class a 
         {
-        b = b + 3;
-        b = b + d[a];
+            int a,x;
         }
-        print (a);
-        print (c + b);
+        void main()
+        {
+          a=4;
+        b=c*d;
+        do
+        {
+            a=z;
+        }while(a*f);
+        
+        if(a==b)
+        then
+        {
+            a=x;
+        }
+        else
+        {
+            a = s-d;
+        }
+        
+        while(a==1)
+        do
+        {
+            s=4;
+        }
+            
+        
+        
+        for(i=1;i<10;i++)
+        {
+            s=b+2;
+            print (a+b);
+            v=2;
+        }
+        }
+        
             '''
     result = parser.parse(s)
     astRoot = yacc.parse(s)
     print 'Done with parsing'
-    wellformed(result,decl,defined)
+    '''
+    ismain(result)
+    if done == 0:
+        print "Main function ERROR: Main Not Found"
+    
+    isreturn(result)
+    
+    wellformed(result,decl,defined,parent)
+    welltyped(result,vars)'''
