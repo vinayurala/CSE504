@@ -381,22 +381,60 @@ defined = list()
 parent = None
 done = 0
 vars = {}
+found = [0]
 
 ##############################################################################################
 
-def wellformed(node,decl,defined,parent):
+def wellformed(node,decl,defined):
     #print node
-    #print node.type
+    print node.type
     iterable_list = node.children[:]
+    
+    
+    if node.type == "FunctionCall":
+        wellformed(node.children[2],decl,defined)
+        return
+    
+    if node.type == "NewObject":
+        return
+
+    
+    
+    if node.type == "FunDecl":
+        temp_decl = decl[:]
+        temp_defined = defined[:]
+        iterable_list = node.children[3:]
+        for child in iterable_list:
+            wellformed(child,temp_decl,temp_defined)
+        return
+
+    if node.type == "Formals":
+        id = node.children[1]
+        decl.append(id)
+        defined.append(id)
+        if len(node.children) > 2 :
+            wellformed(node.children[3],decl,defined)
+        return
+
+    if node.type == "ClassDecl":
+        iterable_list = node.children[3:]
+        temp_decl = decl[:]
+        temp_defined = defined[:]
+        for child in iterable_list:
+            wellformed(child,temp_decl,temp_defined)
+        return
+
+    
+    
     
     
     if(node.type == "if"):
         if(len(node.children) == 3):
             temp_decl = decl[:]
             temp_defined = defined[:]
-            temp_parent = node.type
-            wellformed(node.children[0],temp_decl,temp_defined,temp_parent)
-            wellformed(node.children[1],temp_decl,temp_defined,temp_parent)
+            #temp_parent = node.type
+            wellformed(node.children[0],temp_decl,temp_defined)
+            wellformed(node.children[1],temp_decl,temp_defined)
             #print temp_decl
             #print temp_defined
             set_def = set(temp_defined).difference(set(defined))
@@ -407,7 +445,7 @@ def wellformed(node,decl,defined,parent):
             set_1 = set_def.difference(set_dec)
             #print set_1
         
-            wellformed(node.children[2],temp_decl,temp_defined,temp_parent)
+            wellformed(node.children[2],temp_decl,temp_defined)
             #print temp_decl
             #print temp_defined
             set_def2 = set(temp_defined).difference(set(defined))
@@ -419,10 +457,10 @@ def wellformed(node,decl,defined,parent):
             temp_decl = decl[:]
             temp_defined = defined[:]
             #print decl[:]
-            temp_parent = node.type
+            #temp_parent = node.type
             for child in iterable_list:
                 #print child
-                wellformed(child,temp_decl,temp_defined,temp_parent)
+                wellformed(child,temp_decl,temp_defined)
             #print decl[:]
         return
     
@@ -431,53 +469,53 @@ def wellformed(node,decl,defined,parent):
         temp_decl = decl[:]
         temp_defined = defined[:]
         #print decl[:]
-        temp_parent = node.type
+        #temp_parent = node.type
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined,temp_parent)
+            wellformed(child,temp_decl,temp_defined)
         #print decl[:]
         return
     
     elif(node.type == "do"):
         #print "here"
         temp_decl = decl[:]
-        temp_parent = node.type
+        #temp_parent = node.type
         for child in iterable_list:
             #print defined[:]
-            wellformed(child,temp_decl,defined,temp_parent)
+            wellformed(child,temp_decl,defined)
         # print defined[:]
         #print decl[:]
             #print defined[:]
         return
 
     elif(node.type == "for"):
-        temp_parent = node.type
+        #temp_parent = node.type
         if(node.children[0].type == "SEOpt"):
-            wellformed(node.children[0],decl,defined,temp_parent)
+            wellformed(node.children[0],decl,defined)
             iterable_list = node.children[1:]
         temp_decl = decl[:]
         temp_defined = defined[:]
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined,temp_parent)
+            wellformed(child,temp_decl,temp_defined)
         #print decl[:]
         return
 
 
     elif(node.type == "Stmt"):
-        temp_parent = node.type
+        #temp_parent = node.type
         if(node.children[0].type == "LCURLY"):
             temp_decl = decl[:]
           
             #print decl[:]
             for child in iterable_list:
-                wellformed(child,temp_decl,defined,temp_parent)
+                wellformed(child,temp_decl,defined)
 
             return
 
 
     
-    elif(node.type == "Var"):
+    elif(node.type == "VarList"):
         id = node.children[0].leaf
         decl.append(id)
         #print decl[:]
@@ -496,34 +534,36 @@ def wellformed(node,decl,defined,parent):
             return []
     
     elif node.type == "SEEq":
-        temp_parent = node.type
+        #temp_parent = node.type
         iterable_list = node.children[1:]
         for child in iterable_list:
             #print child.type
-            wellformed(child,decl,defined,temp_parent)
-        #print "here"
-        if node.children[0].leaf == None:
-            wellformed(node.children[0],decl,defined,temp_parent)
+            wellformed(child,decl,defined)
 
-        else :
-            id = node.children[0].leaf
-            if not id in decl:
-                print "Wellformed ERROR: Variable \"" + id + "\" NOT DECLARED before use"
-                sys.exit(-1)
-                return []
-            elif id in defined:
-                pass
-            else:
-                defined.append(id)
+        lhs = node.children[0]
+        if lhs.children[0].type == "FieldAccess":
+            field = lhs.children[0]
+            if field.children[0].type == "ID":
+                id = field.children[0].leaf
+                if not id in decl:
+                    print "Wellformed ERROR: Variable \"" + id + "\" NOT DECLARED before use"
+                    sys.exit(-1)
+                    return []
+                elif id in defined:
+                    pass
+                else:
+                    defined.append(id)
+
+        
         return
         #print "-----" + id
         #print defined[:]
         
     
-    temp_parent = node.type
+    #temp_parent = node.type
     for child in iterable_list:
         #print child.type
-        wellformed(child,decl,defined,temp_parent)
+        wellformed(child,decl,defined)
     
     return
 ################################################################################
@@ -544,34 +584,32 @@ def ismain(node):
 def isreturn(node):
     iterable_list = node.children[:]
     if node.type == "FunDecl":
-        found = 0
-        parent = node.type
-        checkreturn(node,found,parent)
-        if found == 0:
+        found = [0]
+        checkreturn(node,found)
+        if found[0] == 0:
             print "function ERROR: Return Not Found in every control flow path"
+            sys.exit(-1)
         return
-    
     for child in iterable_list:
         #print child.type
-        ismain(child)
+        isreturn(child)
     return
 ################################################################################
 
-def checkreturn(node,found,parent):
+def checkreturn(node,found):
     iterable_list = node.children[:]
-    
     
     if(node.type == "if"):
         if(len(node.children) == 3):
-            temp_found = found
-            checkreturn(node.children[1],temp_found,temp_parent)
-            if temp_found == 0:
+            temp_found = found[:]
+            checkreturn(node.children[1],temp_found)
+            if temp_found[0] == 0:
                 return
-            temp_found = found
-            checkreturn(node.children[2],temp_found,temp_parent)
-            if temp_found == 0:
+            temp_found = found[:]
+            checkreturn(node.children[2],temp_found)
+            if temp_found[0] == 0:
                 return
-            found = 1
+            found[0] = 1
             return
         else:
             return
@@ -582,36 +620,114 @@ def checkreturn(node,found,parent):
     elif(node.type == "do"):
         #print "here"
         for child in iterable_list:
-            #print defined[:]
-            temp_parent = node.type
-            checkreturn(child,found,temp_parent)
+            checkreturn(child,found)
         # print defined[:]
         #print decl[:]
         #print defined[:]
         return
                 
     elif(node.type == "Stmt" and node.children[0].leaf == "return"):
-        found = 1
+        #print "Here"
+        found[0] = 1
         return
 
 
 
     
     elif(node.type == "Stmt"):
-        temp_parent = node.type
         if(node.children[0].type == "LCURLY"):
             for child in iterable_list:
-                checkreturn(child,found,parent)
+                checkreturn(child,found)
             
-            return
+        return
 
     for child in iterable_list:
-        checkreturn(child,found,parent)
+        checkreturn(child,found)
     
     return
 
 ################################################################################
 
+
+##############################################################################################
+
+def declareonce(node,decl,parent):
+    #print node
+    #print node.type
+    iterable_list = node.children[:]
+    
+    
+    if node.type == "FunctionCall":
+        declareonce(node.children[2],decl,parent)
+        return
+    
+    if node.type == "NewObject":
+        return
+    
+    
+    
+    if node.type == "FunDecl":
+        temp_decl = []
+        iterable_list = node.children[3:]
+        parent = "FunDecl"
+        for child in iterable_list:
+            declareonce(child,temp_decl,parent)
+        return
+    
+    if node.type == "Formals":
+        id = node.children[1].leaf
+        if id in decl:
+            print "Declare-Once ERROR: Variable \"" + id + "\" DECLARED Multiple Times in a scope"
+            sys.exit(-1)
+        decl.append(id)
+        if len(node.children) > 2 :
+            declareonce(node.children[3],decl,parent)
+        return
+    
+    if node.type == "ClassDecl":
+        temp_decl = []
+        for child in iterable_list:
+            declareonce(child,temp_decl,parent)
+        return
+    
+  
+    
+    elif(node.type == "Stmt"):
+        if parent == "FunDecl" and node.children[0].type == "LCURLY":
+            for child in iterable_list:
+                declareonce(child,decl,None)
+            
+            return
+        
+        if(node.children[0].type == "LCURLY"):
+            temp_decl = []
+            for child in iterable_list:
+                declareonce(child,temp_decl,parent)
+            
+            return
+    
+    
+    
+    elif(node.type == "VarList"):
+        id = node.children[0].leaf
+        if id in decl:
+            print "Declare-Once ERROR: Variable \"" + id + "\" DECLARED Multiple Times in a scope"
+            sys.exit(-1)
+        decl.append(id)
+        #print decl[:]
+        iterable_list = node.children[1:]
+
+    
+    #temp_parent = node.type
+    for child in iterable_list:
+        #print child.type
+        declareonce(child,decl,parent)
+    
+    return
+
+
+
+##############################################################################################
 
 def welltyped(node,vars):
 
@@ -750,8 +866,9 @@ def welltyped(node,vars):
 
 if __name__ == "__main__":
     s = '''
-        int a,b,i,c;
-        bool x,y,z;
+        int a,b,i,c,d;
+        bool y,z;
+        
         
         class a 
         {
@@ -759,49 +876,44 @@ if __name__ == "__main__":
         }
         void main()
         {
-          a=4;
-        b=c*d;
-        do
-        {
-            a=z;
-        }while(a*f);
-        
-        if(a==b)
-        then
-        {
-            a=x;
-        }
-        else
-        {
-            a = s-d;
+            int a;
+            //int a;
+            a=4;
+            c=2;
+            d=1;
+            b=c*d;
+            return;
+           
         }
         
-        while(a==1)
-        do
+        int temp( int a,int b)
         {
-            s=4;
-        }
             
+            bool b;
+            x=2;
+            {
+            //int b;
+             b = 3;
+            }
+           
+            return 3;
         
-        
-        for(i=1;i<10;i++)
-        {
-            s=b+2;
-            print (a+b);
-            v=2;
-        }
         }
         
             '''
     result = parser.parse(s)
     astRoot = yacc.parse(s)
     print 'Done with parsing'
-    '''
+    
     ismain(result)
     if done == 0:
-        print "Main function ERROR: Main Not Found"
+        print "Main function ERROR: Main Function Not WellFormed"
+        sys.exit(-1)
     
     isreturn(result)
+
+    declareonce(result,decl,parent)
     
-    wellformed(result,decl,defined,parent)
+    wellformed(result,decl,defined)
+    '''
     welltyped(result,vars)'''
