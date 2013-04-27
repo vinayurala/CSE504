@@ -134,10 +134,7 @@ def p_varlist(p):
 def p_formals(p):
     '''Formals : Type ID COMMA Formals
                | Type ID
-               | '''                                 # Function may not have any formal arguments
-    if len(p) == 1:
-        p[0] = Node("Formals")
-    else:
+               '''
         p[2] = Node("ID", leaf = p[2])
         if len(p) == 3:
             p[0] = Node("Formals", children = [p[1], p[2]])
@@ -277,14 +274,14 @@ def p_primary_ip(p):
 
 def p_primary_aeparan(p):                           ###########need Parentheses?
     'Primary : LPAREN AE RPAREN'
-    p[0] = Node("Primary", children = [p[2]])
+    p[0] = Node("PrimaryParen", children = [p[2]])
 
 def p_primary_misc(p):
-    '''Primary : FieldAccess
+     '''Primary : FieldAccess
                 | ArrayAccess
                 | FunctionCall
                 | NewObject '''
-    p[0] = Node("Primary", children = [p[1]])
+    p[0] = Node("PrimaryAccess", children = [p[1]])
 
 def p_primary_const(p):
     '''Primary : TRUE
@@ -884,6 +881,7 @@ if __name__ == "__main__":
             c=2;
             d=1;
             b=c*d;
+            temp (a, b);
             return;
            
         }
@@ -891,7 +889,7 @@ if __name__ == "__main__":
         int temp( int a,int b)
         {
             
-            bool b;
+            //bool b;
             x=2;
             {
             //int b;

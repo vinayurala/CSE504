@@ -23,6 +23,33 @@ post_dec_str = str()
 post_dec_list = list()
 atomic_op = str()
                                    
+def formals_extractor(node):
+    global tVar
+    global tID
+    global temp_blk
+
+    idNode = node.children[1]
+    tStr = tVar + str(tID) + " = " + str(idNode.leaf) + "\n"
+    tID += 1
+    temp_blk.append(tStr)
+    if len(node.children) > 2:
+        formals_extractor(node.children[3])
+    
+    return
+
+def args_extractor(node):
+    global tVar
+    global tID
+    global temp_blk
+
+    tStr = ae_extractor(node.children[0])
+    tStr = tVar + str(tID) + " = " + tStr + "\n"
+    temp_blk.append(tStr)
+    tID += 1
+    if len (node.children) > 1:
+        args_extractor(node.children[1])
+
+    return
 
 def gencode(node):
     global ir_blocks
@@ -134,6 +161,7 @@ def gencode(node):
         if len(node.children) == 5:
             gencode(node.children[4])
         else:
+            formals_extractor(node.children[3])
             gencode(node.children[5])
 
     elif node.type is "VarDecl":
@@ -141,6 +169,56 @@ def gencode(node):
 
     elif node.type is "Type":
         return
+
+    elif node.type is "Input":
+        tStr = tVar + str(tID) + " = input()\n"
+        tID += 1
+        temp_blk.append(tStr)
+
+    elif node.type is "PrimaryParen":
+        ae_extractor(node.children[0])
+
+    elif node.type is "ArrayAccess":
+        idNode = node.children[0]
+        str1 = str(ae_extractor(node.children[1]))
+        tStr = tVar + str(tID) + " = " + str(idNode.leaf) + " [" + str1 + "]\n"
+        tID += 1
+        temp_blk.append(tStr)
+
+    elif node.type is "PrimaryAccess":
+        gencode(node.children[0])
+
+    elif node.type is "FunctionCall":
+        idNode = node.children[0]
+        labelStr = str(idNode.leaf) + ":\n"
+        temp_blk.append(labelStr)
+        if len(node.children) == 4:
+            args_extractor(node.children[2])
+        
+    elif node.type is "AE":
+        child = node.children[0]
+        if child.type is "Primary":
+            gencode(child)
+        elif child.type is "SE":
+            se_extractor(child)
+        else:
+            gencode(child)
+    
+    elif node.type is "Binop":
+        str1 = ae_extractor(node.children[0])
+        str2 = ae_extractor(node.children[1])
+        tStr = tVar + str(tID) + " = " + str1 + " " + node.leaf + " " + str2 + "\n"
+        temp_blk.append(tStr)
+        tID += 1
+
+    elif node.type is "Unop":
+        str1 = ae_extractor(node.children[0])
+        tStr = tVar + str(tID) + " = " + node.leaf + " " + str1 + "\n"
+        temp_blk.append(tStr)
+        tID += 1
+
+    
+
 
     elif node.type is "StmtSeq":
         #if node.children:
@@ -181,8 +259,8 @@ def gencode(node):
         temp_blk.append(blk_str)
 
     elif node.type is "SEEq":
-        blk_str = se_extractor(node)
-        temp_blk.append(blk_str)
+        str1 = lhs_extractor(node.children[0])
+        
 
     return temp_blk
 
