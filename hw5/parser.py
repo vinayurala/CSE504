@@ -20,7 +20,7 @@ precedence = (('left', 'OR'),
 
 
 class Node:
-    def __init__(self,type,children=None,leaf=None,check = None):
+    def __init__(self, type, children=None, leaf=None, check = None):
         self.type = type
         if children:
             self.children = children
@@ -133,16 +133,20 @@ def p_varlist(p):
 
 def p_formals(p):
     '''Formals : Type ID COMMA Formals
-               | Type ID'''
-    p[2] = Node("ID", leaf = p[2])
-    if len(p) == 3:
-        p[0] = Node("Formals", children = [p[1], p[2]])
+               | Type ID
+               | '''                                 # Function may not have any formal arguments
+    if len(p) == 1:
+        p[0] = Node("Formals")
     else:
-        p[3] = Node("COMMA", leaf = p[3])
-        p[0] = Node("Formals", children = [p[1], p[2], p[3], p[4]])
+        p[2] = Node("ID", leaf = p[2])
+        if len(p) == 3:
+            p[0] = Node("Formals", children = [p[1], p[2]])
+        else:
+            p[3] = Node("COMMA", leaf = p[3])
+            p[0] = Node("Formals", children = [p[1], p[2], p[3], p[4]])
 
 def p_stmt(p):
-    '''Stmt : SE SCOLON
+     '''Stmt : SE SCOLON
         Stmt : PRINT LPAREN AE RPAREN SCOLON
         Stmt : IF AE THEN Stmt ELSE Stmt
         Stmt : IF AE THEN Stmt
@@ -186,8 +190,6 @@ def p_aeopt(p):
         p[0] = Node("AEOpt")
     else:
         p[0] = Node("AEOpt", children = [p[1]])
-
-
 
 def p_stmtseq(p):
     'StmtSeq : Stmt StmtSeq'
