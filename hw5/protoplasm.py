@@ -28,6 +28,7 @@ for i in gencode_blocks:
 icLines = filter(None, icLines)
 icLines = icLines[::-1]
 gencode_blocks = icLines[::-1]
+'''
 (inSets, outSets) = final_liveness(icLines)
 intGraph = buildInterferenceGraph(inSets, outSets)
 (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
@@ -44,3 +45,4 @@ for line in asmLines:
     f1.write(line)
 f1.close()
 print "Compilation succeeded and output written to " + str(targetFile)
+'''

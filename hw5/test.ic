@@ -1,0 +1,19 @@
+temp:
+t1 = a
+t2 = b
+x = 2
+{
+b = 3
+}
+t3 = 3
+ret t3
+
+main:
+a = 4
+c = 2
+d = 1
+t4 = c * d
+b = t4
+temp(a, b)
+ret
+

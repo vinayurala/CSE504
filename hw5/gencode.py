@@ -22,34 +22,8 @@ recent_dow_lid = 1
 post_dec_str = str()
 post_dec_list = list()
 atomic_op = str()
+scratch_stack = list()
                                    
-def formals_extractor(node):
-    global tVar
-    global tID
-    global temp_blk
-
-    idNode = node.children[1]
-    tStr = tVar + str(tID) + " = " + str(idNode.leaf) + "\n"
-    tID += 1
-    temp_blk.append(tStr)
-    if len(node.children) > 2:
-        formals_extractor(node.children[3])
-    
-    return
-
-def args_extractor(node):
-    global tVar
-    global tID
-    global temp_blk
-
-    tStr = ae_extractor(node.children[0])
-    tStr = tVar + str(tID) + " = " + tStr + "\n"
-    temp_blk.append(tStr)
-    tID += 1
-    if len (node.children) > 1:
-        args_extractor(node.children[1])
-
-    return
 
 def gencode(node):
     global ir_blocks
@@ -69,6 +43,7 @@ def gencode(node):
     global recent_while_lid
     global recent_for_lid
     global atomic_op
+    global scratch_stack
 
     blk1 = list()
     blk2 = list()
@@ -157,11 +132,12 @@ def gencode(node):
         temp_blk.append(label_str)
                 
     elif node.type is "FunDecl":
-        temp_blk.append(str(node.children[1]))
-        if len(node.children) == 5:
+        str1 = node.children[1] + ": "
+        scratch_stack.append(str1)
+        if len(node.children) == 7:
             gencode(node.children[4])
+            gencode(node.children[6])
         else:
-            formals_extractor(node.children[3])
             gencode(node.children[5])
 
     elif node.type is "VarDecl":
@@ -176,25 +152,27 @@ def gencode(node):
         temp_blk.append(tStr)
 
     elif node.type is "PrimaryParen":
-        ae_extractor(node.children[0])
+        gencode(node.children[0])
 
     elif node.type is "ArrayAccess":
-        idNode = node.children[0]
-        str1 = str(ae_extractor(node.children[1]))
-        tStr = tVar + str(tID) + " = " + str(idNode.leaf) + " [" + str1 + "]\n"
-        tID += 1
-        temp_blk.append(tStr)
+        gencode(node.children[0])
+        scratch_stack.append("[")
+        gencode(node.children[1])
+        scratch_stack.append("]")
 
     elif node.type is "PrimaryAccess":
         gencode(node.children[0])
 
     elif node.type is "FunctionCall":
-        idNode = node.children[0]
-        labelStr = str(idNode.leaf) + ":\n"
-        temp_blk.append(labelStr)
-        if len(node.children) == 4:
-            args_extractor(node.children[2])
         
+        
+    elif node.type is "FieldAccess":
+        field_extractor(node)
+            
+    elif node.type is "IntConst":
+        
+
+
     elif node.type is "AE":
         child = node.children[0]
         if child.type is "Primary":
@@ -216,8 +194,6 @@ def gencode(node):
         tStr = tVar + str(tID) + " = " + node.leaf + " " + str1 + "\n"
         temp_blk.append(tStr)
         tID += 1
-
-    
 
 
     elif node.type is "StmtSeq":
@@ -254,14 +230,23 @@ def gencode(node):
     elif node.type is "SEMI":
         pass
             
+    elif node.type is "Block":
+        pass
+
     elif node.type is "LCURLY":
         blk_str = str(node.leaf) + "\n"
         temp_blk.append(blk_str)
 
     elif node.type is "SEEq":
-        str1 = lhs_extractor(node.children[0])
-        
+        child = node.children[0]
+        if child.type is "FieldAccess":
+            str1 = field_extractor(child)
+        else:
+            str1 = array_extractor(child)
 
+        str2 = ae_extractor(node.children[1])
+        tStr = tvar + str(tID) + 
+        
     return temp_blk
 
 def final_codegen(root):

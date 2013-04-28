@@ -20,7 +20,7 @@ precedence = (('left', 'OR'),
 
 
 class Node:
-    def __init__(self, type, children=None, leaf=None, check = None):
+    def __init__(self,type,children=None,leaf=None,check = None):
         self.type = type
         if children:
             self.children = children
@@ -72,16 +72,16 @@ def p_vardecl(p):
     p[0] = Node("VarDecl", children = [p[1], p[2], p[3]])
 
 def p_fundecl(p):                                                   #Used for ?
-    '''FunDecl : Type ID LPAREN Formals RPAREN Stmt                     
-               | Type ID LPAREN RPAREN Stmt'''
+    '''FunDecl : Type ID DimStar LPAREN Formals RPAREN Stmt                     
+               | Type ID DimStar LPAREN RPAREN Stmt'''
     p[2] = Node("ID", leaf = p[2])
-    p[3] = Node("LPAREN", leaf = p[3])
-    if len(p) == 7:
-        p[5] = Node("RPAREN", leaf = p[5])
-        p[0] = Node("FunDecl", children = [p[1], p[2], p[3], p[4], p[5], p[6]])
+    p[4] = Node("LPAREN", leaf = p[4])
+    if len(p) == 8:
+        p[6] = Node("RPAREN", leaf = p[6])
+        p[0] = Node("FunDecl", children = [p[1], p[2], p[3], p[4], p[5], p[6], p[7]])
     else:
-        p[4] = Node("RPAREN", leaf = p[4])
-        p[0] = Node("FunDecl", children = [p[1], p[2], p[3], p[4], p[5]])           # Need to differentiate?
+        p[5] = Node("RPAREN", leaf = p[5])
+        p[0] = Node("FunDecl", children = [p[1], p[2], p[3], p[4], p[5], p[6]])           # Need to differentiate?
 
 
 def p_classdecl(p):
@@ -103,47 +103,56 @@ def p_vardeclseq_null(p):
 def p_type(p):
     '''Type : INT
             | BOOL
-            | VOID
-            | Type LSQR RSQR'''
+            | VOID'''
     if len(p) == 2:
         p[0] = Node("Type", leaf = p[1])
-    else:
-        p[2] = Node("LSQR", leaf = p[2])
-        p[3] = Node("RSQR", leaf = p[3])
-        p[0] = Node("Type", children = [p[1], p[2], p[3]])
 
 def p_type_id(p):
-    'Type : Err ID'
-    p[2] = Node("ID", leaf = p[2])
-    p[0] = Node("Type", children = [p[2]])
+    'Type : ID'
+    p[1] = Node("ID", leaf = p[1])
+    p[0] = Node("Type", children = [p[1]])
 
-def p_err(p):
-    'Err :'
+#def p_err(p):
+#'Err :'
 
 
 def p_varlist(p):
-    '''VarList : ID COMMA VarList
-               | ID '''
-    p[1] = Node("ID", leaf = p[1])
+    '''VarList : Var COMMA VarList
+               | Var '''
     if len(p) == 2:
         p[0] = Node("VarList", children = [p[1]])
     else:
         p[2] = Node("COMMA", leaf = p[2])
         p[0] = Node("VarList", children = [p[1], p[2], p[3]])
 
+def p_var(p):
+    ''' Var : ID DimStar'''
+    p[1] = Node("ID", leaf = p[1])
+    p[0] = Node("Var", children = [p[1], p[2]])
+
+def p_dimstar(p):
+    '''DimStar : LSQR RSQR DimStar
+        DimStar : '''
+    if len(p) == 1:
+        p[0] = Node("DimStar", children = [])
+    elif len(p) == 4:
+        p[1] = Node("LSQR", leaf = p[1])
+        p[2] = Node("RSQR", leaf = p[2])
+        p[0] = Node("DimStar", children = [p[1], p[2], p[3]])
+
+
 def p_formals(p):
-    '''Formals : Type ID COMMA Formals
-               | Type ID
-               '''
-        p[2] = Node("ID", leaf = p[2])
-        if len(p) == 3:
-            p[0] = Node("Formals", children = [p[1], p[2]])
-        else:
-            p[3] = Node("COMMA", leaf = p[3])
-            p[0] = Node("Formals", children = [p[1], p[2], p[3], p[4]])
+    '''Formals : Type ID DimStar COMMA Formals
+               | Type ID DimStar'''
+    p[2] = Node("ID", leaf = p[2])
+    if len(p) == 4:
+        p[0] = Node("Formals", children = [p[1], p[2], p[3]])
+    else:
+        p[4] = Node("COMMA", leaf = p[4])
+        p[0] = Node("Formals", children = [p[1], p[2], p[3], p[4], p[5]])
 
 def p_stmt(p):
-     '''Stmt : SE SCOLON
+    '''Stmt : SE SCOLON
         Stmt : PRINT LPAREN AE RPAREN SCOLON
         Stmt : IF AE THEN Stmt ELSE Stmt
         Stmt : IF AE THEN Stmt
@@ -188,6 +197,8 @@ def p_aeopt(p):
     else:
         p[0] = Node("AEOpt", children = [p[1]])
 
+
+
 def p_stmtseq(p):
     'StmtSeq : Stmt StmtSeq'
     p[0] = Node("StmtSeq",children = [p[1],p[2]])
@@ -196,11 +207,24 @@ def p_stmtseq_null(p):
     'StmtSeq : '
     p[0] = Node("StmtSeq")
 
-def p_stmt_curly(p):
-    'Stmt : LCURLY VarDeclSeq StmtSeq RCURLY'
+def p_stmt_block(p):
+    'Stmt : Block'
+    p[0] = Node("Stmt", children = [p[1]])
+
+def p_block(p):
+    'Block : LCURLY BlockExt RCURLY'
     p[1] = Node("LCURLY", leaf = p[1])
-    p[4] = Node("RCURLY", leaf = p[4])
-    p[0] = Node("Stmt", children = [p[1], p[2], p[3], p[4]])
+    p[3] = Node("RCURLY", leaf = p[3])
+    p[0] = Node("Block", children = [p[1], p[2], p[3]])
+
+def p_blockext(p):
+    '''BlockExt : VarDecl BlockExt
+                | StmtSeq'''
+    if len(p) == 2:
+        p[0] = Node("BlockExt", children = [p[1]])
+    else:
+        p[0] = Node("BlockExt", children = [p[1], p[2]])
+    
 
 def p_stmt_return(p):
     '''Stmt : RETURN AE SCOLON
@@ -274,14 +298,14 @@ def p_primary_ip(p):
 
 def p_primary_aeparan(p):                           ###########need Parentheses?
     'Primary : LPAREN AE RPAREN'
-    p[0] = Node("PrimaryParen", children = [p[2]])
+    p[0] = Node("Primary", children = [p[2]])
 
 def p_primary_misc(p):
-     '''Primary : FieldAccess
+    '''Primary : FieldAccess
                 | ArrayAccess
                 | FunctionCall
                 | NewObject '''
-    p[0] = Node("PrimaryAccess", children = [p[1]])
+    p[0] = Node("Primary", children = [p[1]])
 
 def p_primary_const(p):
     '''Primary : TRUE
@@ -339,29 +363,17 @@ def p_newobject(p):
     p[0] = Node("NewObject", children = [p[1], p[2], p[3], p[4]])
 
 def p_newarray(p):
-    'NewArray : NEW Type DimExpr DimSeq'                    # For DimSeq
+    'NewArray : NEW Type DimExpr DimStar'                    # For DimSeq  #???????????????????????
     p[1] = Node("NEW", leaf = p[1])
     p[0] = Node("NewArray", children = [p[1], p[2], p[3], p[4]])
 
-def p_dimseq(p):
-    'DimSeq : Dim DimSeq'
-    p[0] = node("DimSeq", children = [p[1], p[2]])
 
-def p_dimseq_null(p):
-    'DimSeq :'
-    p[0] = node("DimSeq")
 
 def p_dimexpr(p):
     'DimExpr : LSQR AE RSQR'
     p[1] = Node("LSQR", leaf = p[1])
     p[3] = Node("RSQR", leaf = p[3])
     p[0] = node("DimExpr", children = [p[1], p[2], p[3]])
-
-def p_dim(p):
-    'Dim : LSQR RSQR'
-    p[1] = Node("LSQR", leaf = p[1])
-    p[2] = Node("RSQR", leaf = p[2])
-    p[0] = node("Dim", children = [p[1], p[2]])
 
 
 def p_error(p):
@@ -381,12 +393,21 @@ parent = None
 done = 0
 vars = {}
 found = [0]
+inclass = 0
+classdict = {}
+currentclass = None
+classobj = {}
 
 ##############################################################################################
 
 def wellformed(node,decl,defined):
+    global inclass
+    global currentclass
+    global classobj
+    #print inclass
+    #print currentclass
     #print node
-    print node.type
+    #print node.type
     iterable_list = node.children[:]
     
     
@@ -402,7 +423,7 @@ def wellformed(node,decl,defined):
     if node.type == "FunDecl":
         temp_decl = decl[:]
         temp_defined = defined[:]
-        iterable_list = node.children[3:]
+        iterable_list = node.children[4:]
         for child in iterable_list:
             wellformed(child,temp_decl,temp_defined)
         return
@@ -411,16 +432,21 @@ def wellformed(node,decl,defined):
         id = node.children[1]
         decl.append(id)
         defined.append(id)
-        if len(node.children) > 2 :
-            wellformed(node.children[3],decl,defined)
+        if len(node.children) > 3 :
+            wellformed(node.children[4],decl,defined)
         return
 
     if node.type == "ClassDecl":
-        iterable_list = node.children[3:]
+        iterable_list = node.children[2:]
         temp_decl = decl[:]
         temp_defined = defined[:]
+        inclass = 1
+        currentclass = node.children[0].leaf
         for child in iterable_list:
+            print "in"
             wellformed(child,temp_decl,temp_defined)
+        inclass = 0
+        currentclass = None
         return
 
     
@@ -503,7 +529,7 @@ def wellformed(node,decl,defined):
 
     elif(node.type == "Stmt"):
         #temp_parent = node.type
-        if(node.children[0].type == "LCURLY"):
+        if(node.children[0].type == "Block"):
             temp_decl = decl[:]
           
             #print decl[:]
@@ -513,12 +539,37 @@ def wellformed(node,decl,defined):
             return
 
 
-    
-    elif(node.type == "VarList"):
+
+    elif(node.type == "VarDecl"):
+        Type = node.children[0]
+        if Type.children[0].type == "ID":
+            classid = Type.children[0].leaf
+            if classid not in classdict.keys():
+                print "Wellformed ERROR: CLASS NAME \"" + id + "\" NOT DECLARED before use"
+                sys.exit(-1)
+            var = node.children[1]
+            while var.type != "ID":
+                var = var.children[0]
+            varid = var.leaf
+            if classid not in classobj.keys():
+                classobj[classid] = [varid]
+            else:
+                classobj[classid].append(varid)
+                
+                
+
+
+    elif(node.type == "Var"):
         id = node.children[0].leaf
-        decl.append(id)
-        #print decl[:]
+        if inclass == 1:
+            if  currentclass not in classdict.keys():
+                classdict[currentclass] = [id]
+            else:
+                classdict[currentclass].append(id)
+        else:
+            decl.append(id)
         iterable_list = node.children[1:]
+
     
     elif node.type == "ID":
         id = node.leaf
@@ -570,9 +621,12 @@ def wellformed(node,decl,defined):
 def ismain(node):
     iterable_list = node.children[:]
     if node.type == "FunDecl":
-        if node.children[1].leaf == "main" and node.children[0].leaf == "void" and node.children[3].type == "RPAREN":
+        if node.children[1].leaf == "main" and node.children[0].leaf == "void" and node.children[4].type == "RPAREN":
             global done
             done = 1
+        elif node.children[1].leaf != "main" and node.children[0].leaf == "void":
+            print "function ERROR: Function found which is not MAIN and return type is VOID"
+            sys.exit(-1)
 
     for child in iterable_list:
         #print child.type
@@ -633,7 +687,7 @@ def checkreturn(node,found):
 
 
     
-    elif(node.type == "Stmt"):
+    elif(node.type == "Block"):
         if(node.children[0].type == "LCURLY"):
             for child in iterable_list:
                 checkreturn(child,found)
@@ -679,8 +733,8 @@ def declareonce(node,decl,parent):
             print "Declare-Once ERROR: Variable \"" + id + "\" DECLARED Multiple Times in a scope"
             sys.exit(-1)
         decl.append(id)
-        if len(node.children) > 2 :
-            declareonce(node.children[3],decl,parent)
+        if len(node.children) > 3 :
+            declareonce(node.children[4],decl,parent)
         return
     
     if node.type == "ClassDecl":
@@ -692,13 +746,13 @@ def declareonce(node,decl,parent):
   
     
     elif(node.type == "Stmt"):
-        if parent == "FunDecl" and node.children[0].type == "LCURLY":
+        if parent == "FunDecl" and node.children[0].type == "Block":
             for child in iterable_list:
                 declareonce(child,decl,None)
             
             return
         
-        if(node.children[0].type == "LCURLY"):
+        if(node.children[0].type == "Block"):
             temp_decl = []
             for child in iterable_list:
                 declareonce(child,temp_decl,parent)
@@ -707,7 +761,7 @@ def declareonce(node,decl,parent):
     
     
     
-    elif(node.type == "VarList"):
+    elif(node.type == "Var"):
         id = node.children[0].leaf
         if id in decl:
             print "Declare-Once ERROR: Variable \"" + id + "\" DECLARED Multiple Times in a scope"
@@ -875,13 +929,24 @@ if __name__ == "__main__":
         }
         void main()
         {
-            int a;
+            //int a[];
+            //a obj;
+            
+            bool fg;
             //int a;
+            //obj.a = 3;
             a=4;
+             a[b] = 4;
             c=2;
+        {
+            int fg;
+        
+        
+        
+        }
             d=1;
             b=c*d;
-            temp (a, b);
+            a = temp(3,4);
             return;
            
         }
@@ -890,10 +955,9 @@ if __name__ == "__main__":
         {
             
             //bool b;
-            x=2;
+            //x=2;
             {
-            //int b;
-             b = 3;
+            int b;
             }
            
             return 3;

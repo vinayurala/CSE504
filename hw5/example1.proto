@@ -1,0 +1,29 @@
+class a 
+{
+  int a,x;
+};
+       
+int temp( int a,int b)
+{
+            
+//bool b;
+x=2;
+{
+//int b;
+b = 3;
+}
+           
+return 3;
+}
+ 
+void main()
+{
+int a;
+a=4;
+c=2;
+d=1;
+b=c*d;
+temp (a, b);
+return;
+}
+           
