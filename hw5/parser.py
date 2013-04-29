@@ -110,7 +110,7 @@ def p_type(p):
 def p_type_id(p):
     'Type : ID'
     p[1] = Node("ID", leaf = p[1])
-    p[0] = Node("Type", children = [p[1]])
+    p[0] = Node("IDType", children = [p[1]])
 
 #def p_err(p):
 #'Err :'
@@ -232,11 +232,11 @@ def p_stmt_return(p):
     if len(p) == 3:
         p[2] = Node("SEMI", leaf = p[2])
         p[1] = Node("RETURN", leaf = p[1])
-        p[0] = Node("Stmt", children = [p[1], p[2]])
+        p[0] = Node("RetStmt", children = [p[1], p[2]])
     else:
         p[3] = Node("SEMI", leaf = p[3])
         p[1] = Node("RETURN", leaf = p[1])
-        p[0] = Node("Stmt", children = [p[1], p[2], p[3]])
+        p[0] = Node("RetStmt", children = [p[1], p[2], p[3]])
 
 
 def p_se(p):
@@ -302,9 +302,9 @@ def p_primary_aeparan(p):                           ###########need Parentheses?
 
 def p_primary_misc(p):
     '''Primary : FieldAccess
-                | ArrayAccess
-                | FunctionCall
-                | NewObject '''
+               | ArrayAccess
+               | FunctionCall
+               | NewObject '''
     p[0] = Node("Primary", children = [p[1]])
 
 def p_primary_const(p):
@@ -373,7 +373,7 @@ def p_dimexpr(p):
     'DimExpr : LSQR AE RSQR'
     p[1] = Node("LSQR", leaf = p[1])
     p[3] = Node("RSQR", leaf = p[3])
-    p[0] = node("DimExpr", children = [p[1], p[2], p[3]])
+    p[0] = Node("DimExpr", children = [p[1], p[2], p[3]])
 
 
 def p_error(p):
@@ -397,13 +397,12 @@ inclass = 0
 classdict = {}
 currentclass = None
 classobj = {}
+func = []
 
 ##############################################################################################
 
-def wellformed(node,decl,defined):
-    global inclass
+def wellformed(node,decl,defined,classobj):
     global currentclass
-    global classobj
     #print inclass
     #print currentclass
     #print node
@@ -412,10 +411,18 @@ def wellformed(node,decl,defined):
     
     
     if node.type == "FunctionCall":
-        wellformed(node.children[2],decl,defined)
+        id = node.children[0].leaf
+        if id not in func:
+            print "Wellformed ERROR: FUNCTION\"" + id + "\" NOT DECLARED before Being called"
+            sys.exit(-1)
+        wellformed(node.children[2],decl,defined,classobj)
         return
     
     if node.type == "NewObject":
+        id = node.children[1].leaf
+        if id not in classdict.keys():
+            print "Wellformed ERROR: CLASS\"" + id + "\" NOT A valid CLASS"
+            sys.exit(-1)
         return
 
     
@@ -423,30 +430,21 @@ def wellformed(node,decl,defined):
     if node.type == "FunDecl":
         temp_decl = decl[:]
         temp_defined = defined[:]
+        temp_classobj = classobj.copy()
         iterable_list = node.children[4:]
         for child in iterable_list:
-            wellformed(child,temp_decl,temp_defined)
+            wellformed(child,temp_decl,temp_defined,temp_classobj)
         return
 
     if node.type == "Formals":
-        id = node.children[1]
+        id = node.children[1].leaf
         decl.append(id)
         defined.append(id)
         if len(node.children) > 3 :
-            wellformed(node.children[4],decl,defined)
+            wellformed(node.children[4],decl,defined,classobj)
         return
 
     if node.type == "ClassDecl":
-        iterable_list = node.children[2:]
-        temp_decl = decl[:]
-        temp_defined = defined[:]
-        inclass = 1
-        currentclass = node.children[0].leaf
-        for child in iterable_list:
-            print "in"
-            wellformed(child,temp_decl,temp_defined)
-        inclass = 0
-        currentclass = None
         return
 
     
@@ -457,9 +455,10 @@ def wellformed(node,decl,defined):
         if(len(node.children) == 3):
             temp_decl = decl[:]
             temp_defined = defined[:]
+            temp_classobj = classobj.copy()
             #temp_parent = node.type
-            wellformed(node.children[0],temp_decl,temp_defined)
-            wellformed(node.children[1],temp_decl,temp_defined)
+            wellformed(node.children[0],temp_decl,temp_defined,temp_classobj)
+            wellformed(node.children[1],temp_decl,temp_defined,temp_classobj)
             #print temp_decl
             #print temp_defined
             set_def = set(temp_defined).difference(set(defined))
@@ -470,7 +469,7 @@ def wellformed(node,decl,defined):
             set_1 = set_def.difference(set_dec)
             #print set_1
         
-            wellformed(node.children[2],temp_decl,temp_defined)
+            wellformed(node.children[2],temp_decl,temp_defined,temp_classobj)
             #print temp_decl
             #print temp_defined
             set_def2 = set(temp_defined).difference(set(defined))
@@ -481,11 +480,12 @@ def wellformed(node,decl,defined):
         else:
             temp_decl = decl[:]
             temp_defined = defined[:]
+            temp_classobj = classobj.copy()
             #print decl[:]
             #temp_parent = node.type
             for child in iterable_list:
                 #print child
-                wellformed(child,temp_decl,temp_defined)
+                wellformed(child,temp_decl,temp_defined,temp_classobj)
             #print decl[:]
         return
     
@@ -493,21 +493,23 @@ def wellformed(node,decl,defined):
     elif(node.type == "while"):
         temp_decl = decl[:]
         temp_defined = defined[:]
+        temp_classobj = classobj.copy()
         #print decl[:]
         #temp_parent = node.type
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined)
+            wellformed(child,temp_decl,temp_defined,temp_classobj)
         #print decl[:]
         return
     
     elif(node.type == "do"):
         #print "here"
         temp_decl = decl[:]
+        temp_classobj = classobj.copy()
         #temp_parent = node.type
         for child in iterable_list:
             #print defined[:]
-            wellformed(child,temp_decl,defined)
+            wellformed(child,temp_decl,defined,temp_classobj)
         # print defined[:]
         #print decl[:]
             #print defined[:]
@@ -516,13 +518,14 @@ def wellformed(node,decl,defined):
     elif(node.type == "for"):
         #temp_parent = node.type
         if(node.children[0].type == "SEOpt"):
-            wellformed(node.children[0],decl,defined)
+            wellformed(node.children[0],decl,defined,classobj)
             iterable_list = node.children[1:]
         temp_decl = decl[:]
         temp_defined = defined[:]
+        temp_classobj = classobj.copy()
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined)
+            wellformed(child,temp_decl,temp_defined,temp_classobj)
         #print decl[:]
         return
 
@@ -531,10 +534,10 @@ def wellformed(node,decl,defined):
         #temp_parent = node.type
         if(node.children[0].type == "Block"):
             temp_decl = decl[:]
-          
+            temp_classobj = classobj.copy()
             #print decl[:]
             for child in iterable_list:
-                wellformed(child,temp_decl,defined)
+                wellformed(child,temp_decl,defined,temp_classobj)
 
             return
 
@@ -542,35 +545,74 @@ def wellformed(node,decl,defined):
 
     elif(node.type == "VarDecl"):
         Type = node.children[0]
-        if Type.children[0].type == "ID":
-            classid = Type.children[0].leaf
-            if classid not in classdict.keys():
-                print "Wellformed ERROR: CLASS NAME \"" + id + "\" NOT DECLARED before use"
-                sys.exit(-1)
-            var = node.children[1]
-            while var.type != "ID":
-                var = var.children[0]
-            varid = var.leaf
-            if classid not in classobj.keys():
-                classobj[classid] = [varid]
-            else:
-                classobj[classid].append(varid)
+        if len(Type.children) != 0:
+            if Type.children[0].type == "ID":
+                classid = Type.children[0].leaf
+                if classid not in classdict.keys():
+                    print "Wellformed ERROR: CLASS NAME \"" + id + "\" NOT DECLARED before use"
+                    sys.exit(-1)
+                currentclass = classid
+                iterable_list = node.children[1:]
+                for child in iterable_list:
+                    wellformed(child,decl,defined,classobj)
+                currentclass = None
+                return
+        
                 
                 
 
 
     elif(node.type == "Var"):
-        id = node.children[0].leaf
-        if inclass == 1:
-            if  currentclass not in classdict.keys():
-                classdict[currentclass] = [id]
+        varid = node.children[0].leaf
+        if currentclass != None:
+            if varid not in classobj.keys():
+                classobj[varid] = currentclass
             else:
-                classdict[currentclass].append(id)
+                print "DeclareOnce ERROR: Class Variable \"" + varid + "\" Declares Twice in same scope"
+                sys.exit(-1)
         else:
-            decl.append(id)
+            decl.append(varid)
         iterable_list = node.children[1:]
 
-    
+
+    elif node.type == "FieldAccess":
+        #print "here"
+        #print len(node.children)
+        if len(node.children) > 1:
+            member = node.children[2].leaf
+            primary = node.children[0]
+            while primary.type != "ID":
+                iterable_list = primary.children[1:0]
+                for child in iterable_list:
+                    wellformed(child,decl,defined,classobj)
+                primary = primary.children[0]
+            varid = primary.leaf
+            if varid not in classobj.keys():
+                print "Wellformed ERROR: Class Variable \"" + varid + "\" NOT DECLARED before use"
+                sys.exit(-1)
+            classid = classobj[varid]
+            if member not in classdict[classid]:
+                print "Wellformed ERROR: Variable \"" + member + "\" NOT present in class " + classid
+                sys.exit(-1)
+            return
+
+
+    elif node.type == "ArrayAccess":
+        iterable_list = node.children[1:0]
+        for child in iterable_list:
+            wellformed(child,decl,defined,classobj)
+        primary = node.children[1]
+        while primary.type != "ID":
+            iterable_list = primary.children[1:0]
+            for child in iterable_list:
+                wellformed(child,decl,defined,classobj)
+            primary = primary.children[0]
+        id = primary.leaf
+        if id not in classobj.keys() and id not in decl:
+            print "Wellformed ERROR: Array Variable \"" + id + "\" NOT DECLARED before use"
+            sys.exit(-1)
+        return
+
     elif node.type == "ID":
         id = node.leaf
         #print id
@@ -588,13 +630,15 @@ def wellformed(node,decl,defined):
         iterable_list = node.children[1:]
         for child in iterable_list:
             #print child.type
-            wellformed(child,decl,defined)
+            wellformed(child,decl,defined,classobj)
 
         lhs = node.children[0]
-        if lhs.children[0].type == "FieldAccess":
+        if lhs.children[0].type == "FieldAccess" and len(lhs.children[0].children)==1:
             field = lhs.children[0]
             if field.children[0].type == "ID":
                 id = field.children[0].leaf
+                if id in classobj.keys():
+                    return
                 if not id in decl:
                     print "Wellformed ERROR: Variable \"" + id + "\" NOT DECLARED before use"
                     sys.exit(-1)
@@ -603,9 +647,11 @@ def wellformed(node,decl,defined):
                     pass
                 else:
                     defined.append(id)
+        else:
+            wellformed(lhs,decl,defined,classobj)
 
+    
         
-        return
         #print "-----" + id
         #print defined[:]
         
@@ -613,7 +659,7 @@ def wellformed(node,decl,defined):
     #temp_parent = node.type
     for child in iterable_list:
         #print child.type
-        wellformed(child,decl,defined)
+        wellformed(child,decl,defined,classobj)
     
     return
 ################################################################################
@@ -763,6 +809,9 @@ def declareonce(node,decl,parent):
     
     elif(node.type == "Var"):
         id = node.children[0].leaf
+        if id in func or id in classdict.keys():
+            print "Declare-Once ERROR: Variable \"" + id + "\" Alreay used as CLASS/FUNCTION name"
+            sys.exit(-1)
         if id in decl:
             print "Declare-Once ERROR: Variable \"" + id + "\" DECLARED Multiple Times in a scope"
             sys.exit(-1)
@@ -917,27 +966,77 @@ def welltyped(node,vars):
 
 ################################################################################
 
+
+def find(node):
+    global func
+    global inclass
+    global currentclass
+    global classdict
+    #print inclass
+    #print currentclass
+    #print node
+    #print node.type
+    iterable_list = node.children[:]
+    
+    
+    if node.type == "FunDecl":
+        funid = node.children[1].leaf
+        func.append(funid)
+        for child in iterable_list:
+            find(child)
+        return
+
+    if node.type == "ClassDecl":
+        iterable_list = node.children[2:]
+        inclass = 1
+        currentclass = node.children[0].leaf
+        for child in iterable_list:
+            find(child)
+        inclass = 0
+        currentclass = None
+        return
+
+
+    elif(node.type == "Var"):
+        id = node.children[0].leaf
+        if inclass == 1:
+            if  currentclass not in classdict.keys():
+                classdict[currentclass] = [id]
+            else:
+                classdict[currentclass].append(id)
+        iterable_list = node.children[1:]
+
+    #temp_parent = node.type
+    for child in iterable_list:
+        #print child.type
+            find(child)
+
+    return
+
+
+################################################################################
+
 if __name__ == "__main__":
     s = '''
-        int a,b,i,c,d;
-        bool y,z;
+        int a,b,c,d;
         
         
-        class a 
+        class myclass
         {
-            int a,x;
+            int x,y,z;
         }
+        
+        
         void main()
         {
-            //int a[];
-            //a obj;
-            
-            bool fg;
-            //int a;
-            //obj.a = 3;
-            a=4;
-             a[b] = 4;
-            c=2;
+            int a,b;
+            myclass obj;
+            a=1;
+            obj = new myclass ();
+            obj.x = a;
+            obj.y = 1;
+            //obj.l =1;
+            //objj.x = 1;
         {
             int fg;
         
@@ -945,13 +1044,14 @@ if __name__ == "__main__":
         
         }
             d=1;
+            c=1;
             b=c*d;
             a = temp(3,4);
             return;
            
         }
         
-        int temp( int a,int b)
+        int temp( int b)
         {
             
             //bool b;
@@ -976,8 +1076,11 @@ if __name__ == "__main__":
     
     isreturn(result)
 
+    find(result)
+    print func[:]
+    print classdict
     declareonce(result,decl,parent)
     
-    wellformed(result,decl,defined)
+    wellformed(result,decl,defined,classobj)
     '''
     welltyped(result,vars)'''

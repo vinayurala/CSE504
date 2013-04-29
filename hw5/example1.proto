@@ -1,29 +1,41 @@
-class a 
+int a,b,c,d;
+class myclass
 {
-  int a,x;
-};
-       
-int temp( int a,int b)
-{
-            
-//bool b;
-x=2;
-{
-//int b;
-b = 3;
+   int x,y,z;
 }
-           
-return 3;
+
+int temp( int b)
+{
+  //bool b;
+  int x;
+  x=2;
+  {
+     int b;
+  }
+  return 3;
 }
- 
+
 void main()
 {
-int a;
-a=4;
-c=2;
-d=1;
-b=c*d;
-temp (a, b);
-return;
+  int a,b;
+  myclass obj; 
+  int arr[];
+  a = 1;
+  obj = new myclass ();
+  obj.x = a;
+  obj.y = 1;
+  arr = new int [10];
+  //obj.l =1;
+  //objj.x = 1;
+  {
+     int fg;
+  }
+  d = 1;
+  c = 1;
+  b = ++c * d-- + 5;
+  //arr[0] = 5;
+  //b = c++;
+  //b = arr[++c]++;
+  a = temp(3,4);
+  return;
 }
-           

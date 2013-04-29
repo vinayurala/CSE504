@@ -22,8 +22,144 @@ recent_dow_lid = 1
 post_dec_str = str()
 post_dec_list = list()
 atomic_op = str()
+post_op_list = list()
 scratch_stack = list()
-                                   
+
+three_ops = ["+", "-", "*", "/", "%", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "[", "]", ".", "="]
+two_ops = ["UMINUS", "NOT"]
+inc_dec = ["++", "--"]
+
+def clear_stack():
+    global scratch_stack
+    global temp_blk
+    global tVar
+    global tID
+    global post_op_list
+
+    tStr = str()
+    str1 = str2 = str()
+    pre_op = False
+
+    if not scratch_stack:
+        return
+
+    scratch_stack = scratch_stack[::-1]
+    
+    if "(" in scratch_stack and ")" in scratch_stack and "," in scratch_stack:   # Function Call
+        if "=" in scratch_stack:
+            str1 = scratch_stack.pop(0)               # =
+            str2 = scratch_stack.pop(0)               # ret
+            
+        while scratch_stack:
+            tStr += scratch_stack.pop() + " "
+        
+        if str2 and str1:
+            tStr = str2 + " " + str1 + " " + tStr
+            
+        tStr += "\n"
+        temp_blk.append(tStr)
+        return
+
+
+    if len(scratch_stack) == 2:
+        if "++" in scratch_stack or "--" in scratch_stack:
+            str1 = scratch_stack.pop()
+            str2 = scratch_stack.pop()
+            if str2 == "++" or str2 == "--":
+                str1, str2 = str2, str1
+                pre_op = False
+            else:
+                pre_op = True
+
+            if pre_op:
+                tStr = str2 + " = " + str2 + " " + str1[0] + " 1\n"
+                temp_blk.append(tStr)
+            else:
+                postStr = str2 + " = " + str2 + " " + str1[0] + " 1\n"
+                post_op_list.append(postStr)
+            scratch_stack.append(str2)
+
+        else:
+            str1 = scratch_stack.pop()
+            str2 = scratch_stack.pop()
+            tStr = tVar + str(tID) + " = " + str1 + str2 + "\n"
+            temp_blk.append(tStr)
+            tStr = tVar + str(tID)
+            tID += 1
+            scratch_stack.append(tStr)
+
+        return
+
+    if len(scratch_stack) == 3:                      # Assignment; need to take care of cascaded assignments too
+        if "=" in scratch_stack:
+            str1 = scratch_stack.pop()
+            str2 = scratch_stack.pop(0)
+            str3 =scratch_stack.pop()
+            tStr = str3 + " " + str2 + " " + str1 + "\n"
+        else:                                       # For Binop (eg. arr[c+d])
+            str1 = scratch_stack.pop()
+            str2 = scratch_stack.pop()
+            str3 =scratch_stack.pop()
+            tStr = tVar + str(tID) + " = " + str1 + " " + str3 + " " + str2 + "\n"
+            tID += 1
+
+        temp_blk.append(tStr)
+        return
+
+    while len(scratch_stack) > 1:
+        postStr = str()
+        preStr = str()
+        tStr = str()
+
+        str1 = scratch_stack.pop()
+        str2 = scratch_stack.pop()
+        str3 = scratch_stack.pop()
+        
+        if str1 == "++" or str1 == "--":
+            str2, str1 = str1, str2
+            pre_op = True
+
+        elif str3 == "++" or str3 == "--":
+            str3, str2 = str2, str3
+            pre_op = False
+
+        if not str2 in two_ops and not str2 in inc_dec:
+            if str3 in three_ops:
+                if str3 is "=":
+                    tStr = str2 + " " + str3 + " " + str1 +"\n"
+                    temp_blk.append(tStr)
+                else:
+                    tStr = tVar + str(tID) + " = " + str2 + " " + str3 + " " + str1 + "\n"
+                    temp_blk.append(tStr)
+                    tStr = tVar + str(tID)
+                    tID += 1
+                    scratch_stack.append(tStr)
+        else:
+            if not pre_op:
+                str1, str3 = str3, str1
+            scratch_stack.append(str3)
+            if str2 in inc_dec:
+                if pre_op:
+                    tStr = str1 + " = " + str1 + " " + str2[0] + " 1\n"
+                    temp_blk.append(tStr)
+                else:
+                    postStr = str1 + " = " + str1 + " " + str2[0] + " 1\n"
+                    post_op_list.append(postStr)
+                scratch_stack.append(str1)
+
+            else:
+                tStr = tVar + str(tID) +  " = " + str2 + str1 + "\n"
+                temp_blk.append(tStr)
+                tStr = tVar + str(tID)
+                scratch_stack.append(tStr)
+                tID += 1
+
+    while post_op_list:
+        temp_blk.append(post_op_list.pop())
+
+    if scratch_stack:
+        scratch_stack.pop()
+    return
 
 def gencode(node):
     global ir_blocks
@@ -52,8 +188,8 @@ def gencode(node):
 
     if node.type is "if":
         end_if_lid = recent_if_lid
-        blk_str = ae_extractor(node.children[0])
-        temp_blk.append(blk_str)
+        gencode(node.children[0])
+        clear_stack()
         if len(node.children) == 3:
             label_str = "if not " + tVar + str(tID - 1) + " goto label else_lid" + str(else_lid) + "\n"
         else:
@@ -62,14 +198,14 @@ def gencode(node):
         end_if_lid += 1
         recent_if_lid += 1
         temp_blk.append(label_str)
-        blk2 = gencode(node.children[1])
+        gencode(node.children[1])
         if len(node.children) == 3:
             label_str = "goto label end_if_lid" + str(end_if_lid - 1) + " \n"
             temp_blk.append(label_str)
             label_str = "label else_lid" + str(else_lid) + " :\n"
             else_lid += 1
             temp_blk.append(label_str)
-            blk3 = gencode(node.children[2])
+            gencode(node.children[2])
             
         label_str = "label end_if_lid" + str(end_if_lid-1) + " :\n"
         end_if_lid -= 1
@@ -77,7 +213,8 @@ def gencode(node):
         
     elif node.type is "while":             
         end_while_lid = recent_while_lid
-        blk_str = ae_extractor(node.children[0])
+        gencode(node.children[0])
+        clear_stack()
         label_str = "if not " + tVar + str(tID - 1) + " goto label end_while_lid" + str(end_while_lid) + "\n"
         end_while_lid += 1
         recent_while_lid += 1
@@ -132,22 +269,82 @@ def gencode(node):
         temp_blk.append(label_str)
                 
     elif node.type is "FunDecl":
-        str1 = node.children[1] + ": "
-        scratch_stack.append(str1)
+        idNode = node.children[1]
+        str1 = idNode.leaf + ":"
+        temp_blk.append(str1)
+        temp_blk.append("{\n")
         if len(node.children) == 7:
-            gencode(node.children[4])
             gencode(node.children[6])
         else:
             gencode(node.children[5])
+        temp_blk.append("}\n")
+
+    elif node.type is "Formals":
+        idNode = node.children[1]
+        scratch_stack.append(str(idNode.leaf))
+        gencode(node.children[2])
+        scratch_stack.append(", ")
+        if len(node.children) > 3:
+            gencode(node.children[4])
+            
+    elif node.type is "RetStmt":
+        if len(node.children) > 2:
+            gencode(node.children[1])
+            str1 = scratch_stack.pop()
+            str1 = "ret " + str1
+            temp_blk.append(str1)
+            del scratch_stack[:]
+        else:
+            temp_blk.append("ret")
+            
+
+    elif node.type is "Pgm":
+        gencode(node.children[0])
+
+    elif node.type is "DeclSeq":
+        if node.children:
+            gencode(node.children[0])
+            gencode(node.children[1])
+            
+    elif node.type is "Decl":
+        child = node.children[0]
+        if child.type is "FunDecl":
+            gencode(child)
 
     elif node.type is "VarDecl":
+        pass
+
+    elif node.type is "VarDeclSeq":
+        pass
+
+    elif node.type is "ClassDecl":
         return
+        
+    elif node.type is "VarList":
+        return
+
+    elif node.type is "Var":
+        return
+
+    elif node.type is "Lhs":
+        gencode(node.children[0])
+
+    elif node.type is "DimStar":
+        if node.children:
+            gencode(node.children[2])
+    
+    elif node.type is "IDType":
+        idNode = node.children[0]
+        scratch_stack.append(str(idNode.leaf))
+
+    elif node.type is "ID":
+        scratch_stack.append(str(node.leaf))
 
     elif node.type is "Type":
-        return
+        scratch_stack.append(str(node.leaf))
 
     elif node.type is "Input":
-        tStr = tVar + str(tID) + " = input()\n"
+        tStr = tVar + str(tID) + " = input()"
         tID += 1
         temp_blk.append(tStr)
 
@@ -156,103 +353,177 @@ def gencode(node):
 
     elif node.type is "ArrayAccess":
         gencode(node.children[0])
-        scratch_stack.append("[")
+        str1 = scratch_stack.pop()
+        init_len = len(scratch_stack)
         gencode(node.children[1])
-        scratch_stack.append("]")
+        curr_len = len(scratch_stack)
+        if (curr_len - init_len) > 1:
+            stack1 = scratch_stack[init_len:curr_len]
+            del scratch_stack[init_len:curr_len]
+            stack2 = scratch_stack[:]
+            scratch_stack = stack1[:]
+            clear_stack()
+            scratch_stack = stack2[:] + scratch_stack
+            if len(stack1) == 2:
+                str2 = str(scratch_stack.pop())
+            else:
+                str2 = tVar + str(tID - 1)
+        else:
+            str2 = str(scratch_stack.pop())
+        str1 = str1 + "[" + str2 + "]"
+        scratch_stack.append(str1)
 
     elif node.type is "PrimaryAccess":
         gencode(node.children[0])
 
     elif node.type is "FunctionCall":
-        
-        
-    elif node.type is "FieldAccess":
-        field_extractor(node)
-            
-    elif node.type is "IntConst":
-        
+        str1 = str()
+        idNode = node.children[0]
+        scratch_stack.append(str(idNode.leaf))
+        scratch_stack.append("(")
+        if len(node.children) == 4:
+            gencode(node.children[2])
+        scratch_stack.append(")")
 
+    elif node.type is "Args":
+        gencode(node.children[0])
+        if len(node.children) > 1:
+            scratch_stack.append(",")
+            gencode(node.children[2])
+        
+    elif node.type is "NewObject":
+        idNode = node.children[1]
+        str1 = "new " + str(idNode.leaf) + "()"
+        scratch_stack.append(str1)
+
+    elif node.type is "NewArray":
+        typeNode = node.children[1]
+        str1 = "new " + str(typeNode.leaf)
+        init_len = len(scratch_stack)
+        gencode(node.children[2])
+        curr_len = len(scratch_stack)
+        if (curr_len - init_len) > 1:
+            clear_stack()
+            str2 = tVar + str(tID - 1)
+        elif len(scratch_stack) == 1:
+            str2 = scratch_stack.pop()
+        str1 = str1 + "[" + str2 + "]"
+        init_len = len(scratch_stack)
+        gencode(node.children[3])
+        curr_len = len(scratch_stack)
+        if (curr_len - init_len) > 1:
+            clear_stack()
+            str2 = tVar + str(tID - 1)
+            str1 += "[" + str2 + "]" + "\n"
+        elif len(scratch_stack) == 1:
+            str2 = scratch_stack.pop()
+            str1 += "[" + str2 + "]" + "\n"
+        scratch_stack.append(str1)
+
+    elif node.type is "DimExpr":
+        gencode(node.children[1])
+
+    elif node.type is "FieldAccess":
+        if len(node.children) > 1:
+            gencode(node.children[0])
+            str1 = scratch_stack.pop()
+            idNode = node.children[2]
+            str1 = str1 + "." + str(idNode.leaf)
+            scratch_stack.append(str1)
+        else:
+            gencode(node.children[0])
+
+    elif node.type is "IntConst":
+        scratch_stack.append(str(node.leaf))
 
     elif node.type is "AE":
-        child = node.children[0]
-        if child.type is "Primary":
-            gencode(child)
-        elif child.type is "SE":
-            se_extractor(child)
+        gencode(node.children[0])
+
+    elif node.type is "Primary":
+        gencode(node.children[0])
+
+    elif node.type is "AEOpt":
+        if node.children:
+            gencode(node.children[0])
+
+    elif node.type is "SEOpt":
+        if node.children:
+            gencode(node.children[0])
+
+    elif node.type is "BlockExt":
+        if len(node.children) == 1:
+            gencode(node.children[0])
         else:
-            gencode(child)
-    
+            gencode(node.children[1])
+
     elif node.type is "Binop":
-        str1 = ae_extractor(node.children[0])
-        str2 = ae_extractor(node.children[1])
-        tStr = tVar + str(tID) + " = " + str1 + " " + node.leaf + " " + str2 + "\n"
-        temp_blk.append(tStr)
-        tID += 1
+        gencode(node.children[0])
+        gencode(node.children[1])
+        scratch_stack.append(str(node.leaf))
 
     elif node.type is "Unop":
-        str1 = ae_extractor(node.children[0])
-        tStr = tVar + str(tID) + " = " + node.leaf + " " + str1 + "\n"
-        temp_blk.append(tStr)
-        tID += 1
-
+        scratch_stack.append(str(node.leaf))
+        gencode(node.children[0])
 
     elif node.type is "StmtSeq":
-        #if node.children:
-        #    blk1 = gencode(node.children[0])
-        #    blk2 = gencode(node.children[1]) 
-        return
+        if node.children:
+            gencode(node.children[0])
+            gencode(node.children[1])
+        else:
+            return
 
     elif node.type is "Stmt":
-        blk1 = gencode(node.children[0])
-        blk2 = gencode(node.children[1])
-        if len(node.children) == 3:
-            blk3 = gencode(node.children[2])
-        #    blk4 = gencode(node.children[3]) 
+        gencode(node.children[0])
+        if len(node.children) > 1:
+            gencode(node.children[1])
 
     elif node.type is "print":
-        str1 = str(ae_extractor(node.children[0]))
-        if "\n" in str1:
-            idx = str1.rfind('\n')
-            str2 = str1[idx+1:len(str1)]
-            str3 = str1[0:idx+1]
-            if str2:
-                blk_str = str3 + "print " + str2 + "\n"
-            else:
-                blk_str = str3 + "print " + tVar + str(tID - 1) + "\n"
+        gencode(node.children[0])
+        if len(scratch_stack) == 1:
+            str1 = scratch_stack.pop()
         else:
-            blk_str = "print " + str1
-        temp_blk.append(blk_str)
+            clear_stack()
+            str1 = tVar + str(tID - 1)
+
+        scratch_stack.append("print (")
+        scratch_stack.append(str1)
+        scratch_stack.append(")")
 
     elif node.type is "RCURLY":
-        blk_str = str(node.leaf) + "\n"
-        temp_blk.append(blk_str)
+        temp_blk.append("}")
 
     elif node.type is "SEMI":
-        pass
+        clear_stack()
             
     elif node.type is "Block":
-        pass
+        gencode(node.children[1])
 
     elif node.type is "LCURLY":
-        blk_str = str(node.leaf) + "\n"
-        temp_blk.append(blk_str)
+        temp_blk.append("{")
 
     elif node.type is "SEEq":
-        child = node.children[0]
-        if child.type is "FieldAccess":
-            str1 = field_extractor(child)
-        else:
-            str1 = array_extractor(child)
+        eqNode = node.children[1]
+        gencode(node.children[2])
+        gencode(node.children[0])        
+        scratch_stack.append(eqNode.leaf)
 
-        str2 = ae_extractor(node.children[1])
-        tStr = tvar + str(tID) + 
-        
-    return temp_blk
+    elif node.type is "SEPost":
+        gencode(node.children[0])
+        postNode = node.children[1]
+        scratch_stack.append(postNode.leaf)
+
+    elif node.type is "SEPre":
+        preNode = node.children[0]
+        scratch_stack.append(preNode.leaf)
+        gencode(node.children[1])
+    
+    return
 
 def final_codegen(root):
-
-    ir_blocks = gencode(root)
-    return ir_blocks
+    gencode(root)
+    for line in temp_blk:
+        print line
+    return temp_blk
 
 if __name__ == "__main__":
     gencode(astRoot)

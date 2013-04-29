@@ -1,19 +1,34 @@
 temp:
-t1 = a
-t2 = b
-x = 2
 {
-b = 3
+
+x = 2
+
+ret 3
 }
-t3 = 3
-ret t3
 
 main:
-a = 4
-c = 2
+{
+
+a = 1
+
+obj = new myclass()
+
+obj.x = a
+
+obj.y = 1
+
 d = 1
-t4 = c * d
-b = t4
-temp(a, b)
+
+c = 1
+
+t1 = c * d
+
+t2 = t1 + 5
+
+b = t2
+
+a = temp ( 3 , 4 ) 
+
 ret
+}
 
