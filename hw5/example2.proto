@@ -5,10 +5,15 @@ void main()
 	c = 3;
 	a = 1;
 	//a = ++b * c-- + 5;
+	//a = -b + c;
+	b = 1;
+	a = 4;
+	c = a - 5 - b;
 	while (b < 2 && a > 3) do
 	{
-		b = b % 2;
-		a++;
+		c = b % 2;
+		b++;
+		a--;
 	} 
 	print (a+b);
 	return;

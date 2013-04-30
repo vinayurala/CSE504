@@ -7,6 +7,7 @@ import itertools
 #inSets = list()
 #outSets = list()
 defined_var = set()
+funcn_args = list()
 
 rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
 
@@ -21,6 +22,7 @@ def liveness (icLines):
     #global inSets
     #global outSets
     global defined_var
+    global funcn_args
 
     rhsVars = []
     tList = []
@@ -39,11 +41,16 @@ def liveness (icLines):
     lparen_idx = args_str.index('(')
     rparen_idx = args_str.index(')')
     args = args_str[lparen_idx+1:rparen_idx]
+    idx = 0
     for arg in args:
         if arg is "," or arg is " ":
             pass
         else:
-            defined_var.add(arg)
+            if idx < 4:
+                idx += 1
+                funcn_args.append(arg)
+            else:
+                defined_var.add(arg)
         
     for line in icLines:
         if line == '':
@@ -226,6 +233,9 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
             coloredList[keys] = colorV 
             colorV = (colorV + 1) % 15
     
+    arg_
+    for arg in funcn_args:
+        
 
     return (coloredList, spilledList)
 

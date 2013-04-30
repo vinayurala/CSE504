@@ -19,7 +19,7 @@ int temp(int y, int z)
   {
 	x--;
 	e = 5 % 2;
-	y = y + 1;
+	y = y + -e;
   }
 
   do	

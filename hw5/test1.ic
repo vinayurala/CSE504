@@ -1,41 +1,52 @@
 temp (y, z):
 {
 x = 2
+
 e = 1
+
 label while_lid1 :
-t1 = x < 2 && e != 0 
+
+t1 = 2 < x && e != 0 
+
 if not t1 goto label end_while_lid1
+
 x = x - 1
-t2 = 5 % 2
+
+t2 = 2 % 5
+
 e = t2
-t3 = y + 1
-y = t3
+
+y = +
+
 goto label while_lid1
+
 label end_while_lid1 :
+
 label do_while_lid1 :
+
 label while_lid3 :
 
-t4 = e < 10
+t3 = 10 < e
 
-if not t4 goto label end_while_lid2
+if not t3 goto label end_while_lid2
 
-t5 = 4 * 3
+t4 = 3 * 4
 
-t6 = e + t5
+t5 = e + t4
 
-e = t6
+e = t5
 
 goto label while_lid3
 
 label end_while_lid2 :
 
-t7 = x + 1
+t6 = 1 + x
 
-x = t7
+x = t6
 
-t8 = x > 2
+t7 = 2 > x
 
-if t8 goto label do_while_lid1
+if t7 goto label do_while_lid1
 
 ret 3
 }
@@ -59,29 +70,29 @@ c = 1
 
 c = c + 1
 
-t9 = d * c
+t8 = d * c
 
-t10 = 5 + t9
+t9 = 5 + t8
 
-b = t10
+b = t9
 
 d = d - 1
 
-t11 = c * d
+t10 = d * c
 
-obj.arr[0] = t11
+obj.arr[0] = t10
 
 a = call_temp ( 3 , 4 ) 
 
-t12 = a > b
+t11 = b > a
 
-if not t12 goto label else_lid1
+if not t11 goto label else_lid1
 
 a = 1
 
-t13 = c < 0
+t12 = 0 < c
 
-if not t13 goto label end_if_lid2
+if not t12 goto label end_if_lid2
 
 c = 0
 
@@ -89,9 +100,9 @@ label end_if_lid2 :
 
 b = 5
 
-t14 = a + b
+t13 = b + a
 
-c = t14
+c = t13
 
 goto label end_if_lid1 
 
@@ -99,9 +110,9 @@ label else_lid1 :
 
 b = 4
 
-t15 = a - b
+t14 = b - a
 
-c = t15
+c = t14
 
 label end_if_lid1 :
 
@@ -109,13 +120,13 @@ c = 0
 
 label for_lid1 :
 
-t16 = c < 10
+t15 = 10 < c
 
-if not t16 goto label end_for_lid1
+if not t15 goto label end_for_lid1
 
-t17 = a + 4
+t16 = 4 + a
 
-a = t17
+a = t16
 
 c = c + 1
 
@@ -126,9 +137,9 @@ label end_for_lid1 :
 ret
 }
 ColoredList[0]:
-{'e': 6, 't6': 5, 't7': 7, 't5': 4, 't2': 3, 't3': 2, 'y': 1, 'x': 0, 'z': 8}
+{'e': 4, 't6': 5, 't4': 3, 't5': 2, 't2': 1, 'y': 6, 'x': 0, 'z': 7}
 ColoredList[1]:
-{'a': 9, 'c': 8, 'b': 7, 'd': 6, 't9': 5, 'obj.x': 10, 'obj.y': 11, 't14': 4, 't15': 3, 't17': 2, 't10': 1, 't11': 0, 'obj.arr[0]': 12}
+{'a': 9, 'c': 8, 'b': 7, 'd': 6, 't8': 5, 't9': 4, 'obj.x': 10, 'obj.y': 11, 't14': 3, 't16': 2, 't10': 1, 't13': 0, 'obj.arr[0]': 12}
 Spilled lists: 
 []
 []

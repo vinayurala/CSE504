@@ -96,7 +96,7 @@ def clear_stack():
         if "=" in scratch_stack:
             str1 = scratch_stack.pop()
             str2 = scratch_stack.pop(0)
-            str3 =scratch_stack.pop()
+            str3 = scratch_stack.pop()
             tStr = str3 + " " + str2 + " " + str1 + "\n"
         else:                                       # For Binop (eg. arr[c+d])
             str1 = scratch_stack.pop()
@@ -128,11 +128,19 @@ def clear_stack():
             insert_flag = True
             pre_op = False
 
+        if str1 == "UMINUS" or str1 == "NOT":
+            str1, str2 = str2, str1
+    
+        elif str3 == "UMINUS" or str3 == "NOT":
+            str3, str2 = str3, str2
+
         if not str2 in two_ops and not str2 in inc_dec:
             if str3 in three_ops:
                 if str3 is "=":
                     tStr = str2 + " " + str3 + " " + str1 +"\n"
                     temp_blk.append(tStr)     
+                    if "=" in scratch_stack:
+                        scratch_stack.append(str2)
 
                 else:
                     tStr = tVar + str(tID) + " = " + str2 + " " + str3 + " " + str1 + "\n"
@@ -141,7 +149,7 @@ def clear_stack():
                     tID += 1
                     scratch_stack.append(tStr)
 
-            elif any(i in rel_ops for i in scratch_stack):
+            elif any(i in rel_ops for i in scratch_stack):                                   # For && and ||
                 scratch_stack.extend([str3, str1, str2])
                 idx = 1
                 line_list = list()
@@ -170,7 +178,7 @@ def clear_stack():
         else:
             #if not pre_op:
             #    str1, str3 = str3, str1
-            scratch_stack.append(str3)
+            scratch_stack.append(str3)                                             # Pre and Post ops
             if str2 in inc_dec:
                 if pre_op:
                     tStr = str1 + " = " + str1 + " " + str2[0] + " 1\n"
@@ -183,8 +191,12 @@ def clear_stack():
                 else:
                     scratch_stack.append(str1)
 
-            else:
-                tStr = tVar + str(tID) +  " = " + str2 + str1 + "\n"
+            else:                                                                 # UMINUS and NOT
+                if str2 == "UMINUS":
+                    str2 = "neg"
+                else:
+                    str2 = "not"
+                tStr = tVar + str(tID) +  " = " + str2 + " " + str1 + "\n"
                 temp_blk.append(tStr)
                 tStr = tVar + str(tID)
                 scratch_stack.append(tStr)
@@ -507,6 +519,7 @@ def gencode(node):
 
     elif node.type is "Binop":
         temp_var = str()
+        child = node.children[1]
         gencode(node.children[0])
         if len(scratch_stack) == 1:
             temp_var = scratch_stack.pop()
@@ -539,7 +552,7 @@ def gencode(node):
             clear_stack()
             str1 = tVar + str(tID - 1)
 
-        str1 = "print (" + str1 + ")"
+        str1 = "print " + str1
         temp_blk.append(str1)
 
     elif node.type is "RCURLY":

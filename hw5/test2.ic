@@ -1,17 +1,41 @@
 main ():
 {
 b = 2
+
 c = 3
+
 a = 1
+
+b = 1
+
+a = 4
+
+t1 = a - 5
+
+t2 = b - t1
+
+c = t2
+
 label while_lid1 :
-t1 = b < 2 && a > 3 
-if not t1 goto label end_while_lid1
-t2 = b % 2
-b = t2
-a = a + 1
+
+t3 = b < 2 && a > 3 
+
+if not t3 goto label end_while_lid1
+
+t4 = b % 2
+
+c = t4
+
+b = b + 1
+
+a = a - 1
+
 goto label while_lid1
+
 label end_while_lid1 :
-t3 = a + b
-print (t3)
+
+t5 = a + b
+
+print t5
 ret
 }
