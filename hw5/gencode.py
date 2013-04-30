@@ -61,7 +61,7 @@ def clear_stack():
         return
 
 
-    if len(scratch_stack) == 2:
+    if len(scratch_stack) == 2:                              # Ops with increment such as x++
         if "++" in scratch_stack or "--" in scratch_stack:
             str1 = scratch_stack.pop()
             str2 = scratch_stack.pop()
@@ -88,9 +88,8 @@ def clear_stack():
             tID += 1
             scratch_stack.append(tStr)
 
-        return
 
-    if len(scratch_stack) == 3:                      # Assignment; need to take care of cascaded assignments too
+    elif len(scratch_stack) == 3:                      # Assignment; need to take care of cascaded assignments too
         if "=" in scratch_stack:
             str1 = scratch_stack.pop()
             str2 = scratch_stack.pop(0)
@@ -100,7 +99,7 @@ def clear_stack():
             str1 = scratch_stack.pop()
             str2 = scratch_stack.pop()
             str3 =scratch_stack.pop()
-            tStr = tVar + str(tID) + " = " + str1 + " " + str3 + " " + str2 + "\n"
+            tStr = tVar + str(tID) + " = " + str2 + " " + str3 + " " + str1 + "\n"
             tID += 1
 
         temp_blk.append(tStr)
@@ -135,8 +134,8 @@ def clear_stack():
                     tID += 1
                     scratch_stack.append(tStr)
         else:
-            if not pre_op:
-                str1, str3 = str3, str1
+            #if not pre_op:
+            #    str1, str3 = str3, str1
             scratch_stack.append(str3)
             if str2 in inc_dec:
                 if pre_op:
@@ -213,17 +212,16 @@ def gencode(node):
         
     elif node.type is "while":             
         end_while_lid = recent_while_lid
+        label_str = "label while_lid" + str(while_lid) + " :\n"
+        while_lid += 1
+        temp_blk.append(label_str)
         gencode(node.children[0])
         clear_stack()
         label_str = "if not " + tVar + str(tID - 1) + " goto label end_while_lid" + str(end_while_lid) + "\n"
         end_while_lid += 1
         recent_while_lid += 1
         temp_blk.append(label_str)
-        label_str = "label while_lid" + str(while_lid) + " :\n"
-        while_lid += 1
-        temp_blk.append(label_str)
-        temp_blk.append(blk_str)
-        blk2 = gencode(node.children[1])
+        gencode(node.children[1])
         label_str = "goto label while_lid" + str(while_lid - 1) + "\n"
         while_lid += 1
         temp_blk.append(label_str)
@@ -235,11 +233,11 @@ def gencode(node):
         label_str = "label do_while_lid" + str(do_while_lid) + " :\n"
         do_while_lid += 1
         temp_blk.append(label_str)
-        blk1 = gencode(node.children[0])
-        blk_str = ae_extractor(node.children[1])
+        gencode(node.children[0])
+        gencode(node.children[1])
+        clear_stack()
         label_str = "if " + tVar + str(tID - 1) + " goto label do_while_lid" + str(do_while_lid - 1) + "\n"
         do_while_lid += 1
-        temp_blk.append(blk_str)
         temp_blk.append(label_str)
 
     elif node.type is "for":
@@ -272,12 +270,12 @@ def gencode(node):
         idNode = node.children[1]
         str1 = idNode.leaf + ":"
         temp_blk.append(str1)
-        temp_blk.append("{\n")
+        temp_blk.append("{")
         if len(node.children) == 7:
             gencode(node.children[6])
         else:
             gencode(node.children[5])
-        temp_blk.append("}\n")
+        temp_blk.append("}")
 
     elif node.type is "Formals":
         idNode = node.children[1]
@@ -414,10 +412,10 @@ def gencode(node):
         if (curr_len - init_len) > 1:
             clear_stack()
             str2 = tVar + str(tID - 1)
-            str1 += "[" + str2 + "]" + "\n"
+            str1 += "[" + str2 + "]"
         elif len(scratch_stack) == 1:
             str2 = scratch_stack.pop()
-            str1 += "[" + str2 + "]" + "\n"
+            str1 += "[" + str2 + "]"
         scratch_stack.append(str1)
 
     elif node.type is "DimExpr":
@@ -457,9 +455,14 @@ def gencode(node):
             gencode(node.children[1])
 
     elif node.type is "Binop":
+        temp_var = str()
         gencode(node.children[0])
+        if len(scratch_stack) == 1:
+            temp_var = scratch_stack.pop()
         gencode(node.children[1])
-        scratch_stack.append(str(node.leaf))
+        if temp_var:
+            scratch_stack.append(temp_var)
+        scratch_stack.append(str(node.leaf))        
 
     elif node.type is "Unop":
         scratch_stack.append(str(node.leaf))

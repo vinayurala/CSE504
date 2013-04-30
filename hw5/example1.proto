@@ -8,10 +8,26 @@ int temp( int b)
 {
   //bool b;
   int x;
+  int e;
   x=2;
   {
      int b;
   }
+  while (x < 2) do
+  {
+	x--;
+	e = 5 % 2;
+  }
+
+  do	
+  {
+	while (e < 10) do
+	{
+		e = e + 4 * 3;
+	}
+	x = x + 1;
+  } while(x > 2);
+
   return 3;
 }
 
@@ -32,10 +48,26 @@ void main()
   }
   d = 1;
   c = 1;
-  b = ++c * d-- + 5;
+  //b = ++c * d-- + 5;
+  b = c * d - 5;
   //arr[0] = 5;
   //b = c++;
   //b = arr[++c]++;
   a = temp(3,4);
+  if (a > b) then
+  {
+	a = 1;
+	if ( c < 0) then
+	{
+		c = 0;
+	}						
+	b = 5;
+	c = a + b;
+  }
+  else
+  {
+	b = 4;
+	c = a - b;
+  }
   return;
 }
