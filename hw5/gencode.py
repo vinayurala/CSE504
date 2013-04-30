@@ -373,7 +373,8 @@ def gencode(node):
     elif node.type is "FunctionCall":
         str1 = str()
         idNode = node.children[0]
-        scratch_stack.append(str(idNode.leaf))
+        str1 = "call_" + str(idNode.leaf)
+        scratch_stack.append(str1)
         scratch_stack.append("(")
         if len(node.children) == 4:
             gencode(node.children[2])
