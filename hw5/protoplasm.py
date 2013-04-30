@@ -2,7 +2,7 @@ import sys
 from ply.yacc import *
 from parser import *
 from gencode import *
-#from liveness import *
+from liveness import *
 #from mipsCode import *
 
 if (len(sys.argv) != 2):
@@ -19,24 +19,42 @@ except IOError:
 #wellformed(astRoot, decl, defined, classobj)
 #print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
-icLines = list()
-tList = list()
-for i in gencode_blocks:
-    tList = i.split("\n")
-    for t in tList:
-        icLines.append(t)
-icLines = filter(None, icLines)
-icLines = icLines[::-1]
-gencode_blocks = icLines[::-1]
 
-(inSets, outSets) = final_liveness(icLines)
-intGraph = buildInterferenceGraph(inSets, outSets)
-(coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
-tLines = list()
-tLines = gencode_blocks[:]
-for var in spilledList:
-    (gencode_blocks, tID) = modifyIC(tLines, var, tID)
-'''
+function_lines = list()
+all_lines = list()
+for line in gencode_blocks:
+    if line == "}\n" or line == "}":
+        function_lines.append(line)
+        all_lines.append(function_lines[:])
+        del function_lines[:]
+    elif line == "\n":
+        pass
+    else:
+        function_lines.append(line)
+
+coloredMapList = list()
+spilledMapList = list()
+for icLines in all_lines:
+    icLines = icLines[::-1]
+    (inSets, outSets) = final_liveness(icLines)
+    intGraph = buildInterferenceGraph(inSets, outSets)
+    (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
+    tLines = list()
+    tLines = gencode_blocks[:]
+    for var in spilledList:
+        (gencode_blocks, tID) = modifyIC(tLines, var, tID)
+    coloredMapList.append(coloredList)
+    spilledMapList.append(spilledList)
+
+idx = 0
+for coloredList in coloredMapList:
+    print "ColoredList[" + str(idx) + "]:"
+    idx += 1
+    print coloredList
+print "Spilled lists: "
+for spilledList in spilledMapList:
+    print spilledList
+'''        
 asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
 fileName = sys.argv[1]
 (targetFile, _) = fileName.split('.', 2)

@@ -550,8 +550,6 @@ def gencode(node):
 
 def final_codegen(root):
     gencode(root)
-    for line in temp_blk:
-        print line
     return temp_blk
 
 if __name__ == "__main__":
