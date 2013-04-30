@@ -110,7 +110,7 @@ def p_type(p):
 def p_type_id(p):
     'Type : ID'
     p[1] = Node("ID", leaf = p[1])
-    p[0] = Node("IDType", children = [p[1]])
+    p[0] = Node("Type", children = [p[1]])
 
 #def p_err(p):
 #'Err :'
@@ -302,9 +302,9 @@ def p_primary_aeparan(p):                           ###########need Parentheses?
 
 def p_primary_misc(p):
     '''Primary : FieldAccess
-               | ArrayAccess
-               | FunctionCall
-               | NewObject '''
+                | ArrayAccess
+                | FunctionCall
+                | NewObject '''
     p[0] = Node("Primary", children = [p[1]])
 
 def p_primary_const(p):
@@ -541,15 +541,13 @@ def wellformed(node,decl,defined,classobj):
 
             return
 
-
-
     elif(node.type == "VarDecl"):
         Type = node.children[0]
         if len(Type.children) != 0:
             if Type.children[0].type == "ID":
                 classid = Type.children[0].leaf
                 if classid not in classdict.keys():
-                    print "Wellformed ERROR: CLASS NAME \"" + id + "\" NOT DECLARED before use"
+                    print "Wellformed ERROR: CLASS NAME \"" + classid + "\" NOT DECLARED before use"
                     sys.exit(-1)
                 currentclass = classid
                 iterable_list = node.children[1:]

@@ -24,6 +24,7 @@ post_dec_list = list()
 atomic_op = str()
 post_op_list = list()
 scratch_stack = list()
+function_called = False
 
 three_ops = ["+", "-", "*", "/", "%", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "[", "]", ".", "="]
 two_ops = ["UMINUS", "NOT"]
@@ -109,6 +110,7 @@ def clear_stack():
         postStr = str()
         preStr = str()
         tStr = str()
+        insert_flag = False
 
         str1 = scratch_stack.pop()
         str2 = scratch_stack.pop()
@@ -120,6 +122,8 @@ def clear_stack():
 
         elif str3 == "++" or str3 == "--":
             str3, str2 = str2, str3
+            str1, str3 = str3, str1
+            insert_flag = True
             pre_op = False
 
         if not str2 in two_ops and not str2 in inc_dec:
@@ -144,7 +148,10 @@ def clear_stack():
                 else:
                     postStr = str1 + " = " + str1 + " " + str2[0] + " 1\n"
                     post_op_list.append(postStr)
-                scratch_stack.append(str1)
+                if insert_flag:
+                    scratch_stack.insert(len(scratch_stack) - 1, str1)
+                else:
+                    scratch_stack.append(str1)
 
             else:
                 tStr = tVar + str(tID) +  " = " + str2 + str1 + "\n"
@@ -156,8 +163,8 @@ def clear_stack():
     while post_op_list:
         temp_blk.append(post_op_list.pop())
 
-    if scratch_stack:
-        scratch_stack.pop()
+    #if scratch_stack:
+    #    scratch_stack.pop()
     return
 
 def gencode(node):
@@ -179,6 +186,7 @@ def gencode(node):
     global recent_for_lid
     global atomic_op
     global scratch_stack
+    global function_called
 
     blk1 = list()
     blk2 = list()
@@ -264,20 +272,35 @@ def gencode(node):
                 
     elif node.type is "FunDecl":
         idNode = node.children[1]
-        str1 = idNode.leaf + ":"
-        temp_blk.append(str1)
-        temp_blk.append("{")
+        str1 = idNode.leaf 
+        if len(node.children) != 7:
+            str1 += " ():"
+        else:
+            str1 += " ("
+
         if len(node.children) == 7:
+            gencode(node.children[4])
+            scratch_stack = scratch_stack[::-1]
+            while scratch_stack:
+                str1 += scratch_stack.pop()
+            str1 = str1[0:len(str1)-2]
+            str1 += "):"
+            temp_blk.append(str1)
+            temp_blk.append("{")
             gencode(node.children[6])
         else:
+            temp_blk.append(str1)
+            temp_blk.append("{")
             gencode(node.children[5])
+
         temp_blk.append("}")
 
     elif node.type is "Formals":
         idNode = node.children[1]
-        scratch_stack.append(str(idNode.leaf))
+        str1 = idNode.leaf
         gencode(node.children[2])
-        scratch_stack.append(", ")
+        str1 += ", "
+        scratch_stack.append(str1)
         if len(node.children) > 3:
             gencode(node.children[4])
             
@@ -306,10 +329,10 @@ def gencode(node):
             gencode(child)
 
     elif node.type is "VarDecl":
-        pass
+        return
 
     elif node.type is "VarDeclSeq":
-        pass
+        return
 
     elif node.type is "ClassDecl":
         return
@@ -372,6 +395,7 @@ def gencode(node):
 
     elif node.type is "FunctionCall":
         str1 = str()
+        function_called = True
         idNode = node.children[0]
         str1 = "call_" + str(idNode.leaf)
         scratch_stack.append(str1)
@@ -485,20 +509,25 @@ def gencode(node):
             clear_stack()
             str1 = tVar + str(tID - 1)
 
-        scratch_stack.append("print (")
-        scratch_stack.append(str1)
-        scratch_stack.append(")")
+        str1 = "print (" + str1 + ")"
+        temp_blk.append(str1)
 
     elif node.type is "RCURLY":
-        temp_blk.append("}")
+        temp_blk.append("}\n")
 
     elif node.type is "SEMI":
         clear_stack()
+        if scratch_stack:
+            scratch_stack.pop()
             
     elif node.type is "Block":
         gencode(node.children[1])
 
     elif node.type is "LCURLY":
+        if function_called:
+            clear_stack()
+            function_called = False
+
         temp_blk.append("{")
 
     elif node.type is "SEEq":

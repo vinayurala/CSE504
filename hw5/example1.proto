@@ -2,14 +2,16 @@ int a,b,c,d;
 class myclass
 {
    int x,y,z;
+   int arr1[];
 }
 
-int temp( int b)
+int temp(int y, int z)
 {
   //bool b;
   int x;
   int e;
   x=2;
+  e = 1;
   {
      int b;
   }
@@ -17,6 +19,7 @@ int temp( int b)
   {
 	x--;
 	e = 5 % 2;
+	y = y + 1;
   }
 
   do	
@@ -41,6 +44,7 @@ void main()
   obj.x = a;
   obj.y = 1;
   arr = new int [10];
+  obj.arr1 = new int[10];
   //obj.l =1;
   //objj.x = 1;
   {
@@ -48,11 +52,12 @@ void main()
   }
   d = 1;
   c = 1;
-  //b = ++c * d-- + 5;
-  b = c * d - 5;
+  b = ++c * d-- + 5;
+  //b = c * d - 5;
   //arr[0] = 5;
   //b = c++;
   //b = arr[++c]++;
+  obj.arr[0] = c * d;
   a = temp(3,4);
   if (a > b) then
   {

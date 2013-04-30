@@ -16,7 +16,7 @@ except IOError:
     print "File " + sys.argv[1] + " not found!!"
     sys.exit(-1)
 
-#wellformed(astRoot, decl, defined)
+#wellformed(astRoot, decl, defined, classobj)
 #print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
 icLines = list()
@@ -28,7 +28,7 @@ for i in gencode_blocks:
 icLines = filter(None, icLines)
 icLines = icLines[::-1]
 gencode_blocks = icLines[::-1]
-'''
+
 (inSets, outSets) = final_liveness(icLines)
 intGraph = buildInterferenceGraph(inSets, outSets)
 (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
@@ -36,6 +36,7 @@ tLines = list()
 tLines = gencode_blocks[:]
 for var in spilledList:
     (gencode_blocks, tID) = modifyIC(tLines, var, tID)
+'''
 asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
 fileName = sys.argv[1]
 (targetFile, _) = fileName.split('.', 2)
