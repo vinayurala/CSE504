@@ -33,13 +33,15 @@ for line in gencode_blocks:
 
 coloredMapList = list()
 spilledMapList = list()
+argColorList = list()
+functions = list()
 for icLines in all_lines:
     icLines = icLines[::-1]
-    (inSets, outSets) = final_liveness(icLines)
+    (inSets, outSets, func_name) = final_liveness(icLines)
     inSets = inSets[::-1]
     outSets = outSets[::-1]
     intGraph = buildInterferenceGraph(inSets, outSets)
-    (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
+    (coloredList, spilledList, argColorMap) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
     tLines = list()
     inSets = outSets = list()
     tLines = gencode_blocks[:]
@@ -47,8 +49,13 @@ for icLines in all_lines:
         (gencode_blocks, tID) = modifyIC(tLines, var, tID)
     coloredMapList.append(coloredList)
     spilledMapList.append(spilledList)
+    argColorList.append(argColorMap)
+    functions.append(func_name)
     coloredList = spilledList = list()
+    argColorMap = dict()
 
+    
+'''
 idx = 0
 for coloredList in coloredMapList:
     print "ColoredList[" + str(idx) + "]:"
@@ -57,7 +64,11 @@ for coloredList in coloredMapList:
 print "Spilled lists: "
 for spilledList in spilledMapList:
     print spilledList
+print "Args color list: "
+for argsColor in argColorList:
+    print argsColor
 
+'''
 '''        
 asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
 fileName = sys.argv[1]
@@ -69,3 +80,29 @@ for line in asmLines:
 f1.close()
 print "Compilation succeeded and output written to " + str(targetFile)
 '''
+mipsLines = list()
+idx = 0
+for icLines in function_lines:
+    coloredList = coloredMapList[idx]
+    spilledList = spilledMapList[idx]
+    argsColor = argColorList[idx]
+    func_name = functions[idx]
+    idx += 1
+
+    init_reg_map()
+    scratchText = mipsTemplate["space"] + "\n.text \n"
+    asmLines.append(scratchText)
+
+    mipsLines = genMIPSCode(icLines, coloredList, spilledList, argsColor, func_name)
+    asmLines.append(mipsLines)
+
+
+asmLines.append(mipsTemplate["exit"])
+scratchText = str(".data\n")
+mipsLines.append(scratchText)
+if data_section:
+    asmLines.append(data_section)
+    if spilledVars:
+        scratchText = str()
+        for var in spilledVars:
+            scratchText += spilledVars[var] + ":\t .word 0\n"

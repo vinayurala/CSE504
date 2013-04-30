@@ -6,17 +6,21 @@ e = 1
 
 label while_lid1 :
 
-t1 = 2 < x && e != 0 
+t1 = x < 2 && e != 0 
 
 if not t1 goto label end_while_lid1
 
 x = x - 1
 
-t2 = 2 % 5
+t2 = 5 % 2
 
 e = t2
 
-y = +
+t3 = neg e
+
+t4 = y + t3
+
+y = t4
 
 goto label while_lid1
 
@@ -26,27 +30,27 @@ label do_while_lid1 :
 
 label while_lid3 :
 
-t3 = 10 < e
+t5 = e < 10
 
-if not t3 goto label end_while_lid2
+if not t5 goto label end_while_lid2
 
-t4 = 3 * 4
+t6 = 4 * 3
 
-t5 = e + t4
+t7 = e + t6
 
-e = t5
+e = t7
 
 goto label while_lid3
 
 label end_while_lid2 :
 
-t6 = 1 + x
+t8 = x + 1
 
-x = t6
+x = t8
 
-t7 = 2 > x
+t9 = x > 2
 
-if t7 goto label do_while_lid1
+if t9 goto label do_while_lid1
 
 ret 3
 }
@@ -70,29 +74,32 @@ c = 1
 
 c = c + 1
 
-t8 = d * c
+t10 = d * c
 
-t9 = 5 + t8
+t11 = 5 + t10
 
-b = t9
+b = t11
 
 d = d - 1
 
-t10 = d * c
+t13 = obj.arr + t12 = 0 * 4
 
-obj.arr[0] = t10
+
+t14 = c * d
+
+t13 = t14
 
 a = call_temp ( 3 , 4 ) 
 
-t11 = b > a
+t15 = a > b
 
-if not t11 goto label else_lid1
+if not t15 goto label else_lid1
 
 a = 1
 
-t12 = 0 < c
+t16 = c < 0
 
-if not t12 goto label end_if_lid2
+if not t16 goto label end_if_lid2
 
 c = 0
 
@@ -100,9 +107,9 @@ label end_if_lid2 :
 
 b = 5
 
-t13 = b + a
+t17 = a + b
 
-c = t13
+c = t17
 
 goto label end_if_lid1 
 
@@ -110,9 +117,9 @@ label else_lid1 :
 
 b = 4
 
-t14 = b - a
+t18 = a - b
 
-c = t14
+c = t18
 
 label end_if_lid1 :
 
@@ -120,13 +127,13 @@ c = 0
 
 label for_lid1 :
 
-t15 = 10 < c
+t19 = c < 10
 
-if not t15 goto label end_for_lid1
+if not t19 goto label end_for_lid1
 
-t16 = 4 + a
+t20 = a + 4
 
-a = t16
+a = t20
 
 c = c + 1
 
@@ -136,10 +143,3 @@ label end_for_lid1 :
 
 ret
 }
-ColoredList[0]:
-{'e': 4, 't6': 5, 't4': 3, 't5': 2, 't2': 1, 'y': 6, 'x': 0, 'z': 7}
-ColoredList[1]:
-{'a': 9, 'c': 8, 'b': 7, 'd': 6, 't8': 5, 't9': 4, 'obj.x': 10, 'obj.y': 11, 't14': 3, 't16': 2, 't10': 1, 't13': 0, 'obj.arr[0]': 12}
-Spilled lists: 
-[]
-[]

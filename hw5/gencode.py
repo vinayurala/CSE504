@@ -429,8 +429,14 @@ def gencode(node):
                 str2 = tVar + str(tID - 1)
         else:
             str2 = str(scratch_stack.pop())
-        str1 = str1 + "[" + str2 + "]"
-        scratch_stack.append(str1)
+        tStr = tVar + str(tID) + " = " + str2 + " * 4\n"
+        tID += 1
+        tStr = tStr + tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
+        temp_blk.append(tStr)
+        tStr = tVar + str(tID)
+        tID += 1
+        #str1 = str1 + "[" + str2 + "]"
+        scratch_stack.append(tStr)
 
     elif node.type is "PrimaryAccess":
         gencode(node.children[0])

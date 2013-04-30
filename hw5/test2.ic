@@ -6,6 +6,8 @@ c = 3
 
 a = 1
 
+d = new int[10]
+
 b = 1
 
 a = 4
@@ -16,26 +18,22 @@ t2 = b - t1
 
 c = t2
 
-label while_lid1 :
-
-t3 = b < 2 && a > 3 
-
-if not t3 goto label end_while_lid1
-
-t4 = b % 2
-
-c = t4
-
-b = b + 1
-
-a = a - 1
-
-goto label while_lid1
-
-label end_while_lid1 :
+t3 = c * 4
+t4 = d + t3
 
 t5 = a + b
 
-print t5
+t4 = t5
+
+t6 = 0 * 4
+t7 = d + t6
+
+t8 = t7 + b
+
+c = t8
+
+t9 = a + b
+
+print t9
 ret
 }

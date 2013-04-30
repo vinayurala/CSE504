@@ -4,6 +4,7 @@ import re
 
 arg_num = 0
 #########################################
+
 mipsCodeMap = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "div", "=": ":=", "neg": "neg", ">=": "bge", ">":"bgt", "<=":"ble", "<":"blt", "goto":"b", "==": "beq", "!=": "bne"}
 mipsInvCodeMap = {">=": "blt", ">":"ble", "<=":"bgt", "<":"bge", "==": "bne", "!=": "beq"}
 mipsTemplate = {"input": "\tli $v0, 5\n\tsyscall\n", "print": "\tli $v0, 1\n\tsyscall\n", "exit":"exit:\n\tli $v0, 10\n\tsyscall\n", "space": ".data\nspace:\t.asciiz \"\\n\"", "printLn": "\taddi $v0, $zero, 4\n\tla $a0, space\n\tsyscall\n"}
@@ -29,7 +30,6 @@ def init_reg_map():
 
 def genMIPSCode (icLines, coloredList, spilledList):
     mipsLines = list()
-    init_reg_map()
     global arr_dict
     global size_dict
     global data_section
@@ -45,9 +45,11 @@ def genMIPSCode (icLines, coloredList, spilledList):
     
     opList = ["+", "-", "*", "/", "%"]
     relop = ["<", ">", "<=", ">=", "==", "!=", "&&", "||"]
+    '''
     scratchText = mipsTemplate["space"] + "\n.text \n main:\n"
     mipsLines.append(scratchText)
-    
+    '''
+
     count = 0
     icLines = filter(None, (line.rstrip() for line in icLines))
     for line in icLines:
@@ -225,23 +227,7 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 
                 tIdx = icLines.index(line)
                 nextLine = icLines[tIdx + 1]
-                '''
-                    line1 = icLines[tIdx-2]
-                    line2 = icLines[tIdx+1]
-                    
-                    if "do_while_lid" in line2:
-                    nextLine = line2
-                    
-                    if "end_if_lid" in line2:
-                    nextLine = line2
-                    
-                    if "end_while_lid" in line1:
-                    nextLine = line1
-                    
-                    if "end_for_lid" in line1:
-                    nextLine = line1
-                    '''
-                
+
                 labelLine = nextLine.split(' ')
                 labelStr = labelLine[len(labelLine) - 1]
                 
@@ -408,17 +394,19 @@ def genMIPSCode (icLines, coloredList, spilledList):
 
         mipsLines.append(tStr)
 
-    mipsLines.append(mipsTemplate["exit"])
-    scratchText = str(".data\n")
-    mipsLines.append(scratchText)
-    if data_section:
-        mipsLines.append(data_section)
-    if spilledVars:
-        scratchText = str()
-        for var in spilledVars:
-            scratchText += spilledVars[var] + ":\t .word 0\n"
 
     return mipsLines
+
+
+def one_run_generation(icLines, coloredList, spilledList, argsColorList):
+    global data_section
+
+
+    mipsLines = genMIPSCode(icLines, coloredList, spilledList, argsColorList, func_name)
+
+    mipsLines.insert(0, scratchText)
+
+    
 
 
 if __name__ == "__main__":
@@ -441,94 +429,7 @@ if __name__ == "__main__":
     print "MIPS code: "
     for line in mipsLines:
         print line
-##########################################################
 
-push ={ "push" : " \t addi $sp, $sp, -4 \n \t sw str, 0($sp)" }
-pop = { "pop" : " \t addi $sp, $sp, 4 \n " }
-popstr = { "popstr" : "\t lw str,0($sp) \n \t add $sp,$sp,4 \n"}
-
-'''
-    func_call :
-    '''
-'''
-    sub $sp, $sp, 56
-    sw $a3, 52($sp)
-    sw $a2, 48($sp)
-    sw $a1, 44($sp)
-    sw $a0, 40($sp)
-    sw $t9, 36($sp)
-    sw $t8, 32($sp)
-    sw $t7, 28($sp)
-    sw $t6, 24($sp)
-    sw $t5, 20($sp)
-    sw $t4, 16($sp)
-    sw $t3, 12($sp)
-    sw $t2, 8($sp)
-    sw $t1, 4($sp)
-    sw $t0, 0($sp)
-    
-    //jal str
-    
-    '''
-'''
-    new_func :
-    '''
-'''
-    subu $sp, $sp, 40
-    sw $ra, 36($sp)
-    sw $fp, 32($sp)
-    sw $s7, 28($sp)
-    sw $s6, 24($sp)
-    sw $s5, 20($sp)
-    sw $s4, 16($sp)
-    sw $s3, 12($sp)
-    sw $s2, 8($sp)
-    sw $s1, 4($sp)
-    sw $s0, 0($sp)
-    
-    '''
-
-'''
-    func_return :
-    '''
-'''
-    
-    addu $sp, $sp, 40
-    lw $ra, -4($sp)
-    lw $fp, -8($sp)
-    lw $s7, -12($sp)
-    lw $s6, -16($sp)
-    lw $s5, -20($sp)
-    lw $s4, -24($sp)
-    lw $s3, -28($sp)
-    lw $s2, -32($sp)
-    lw $s1, -36($sp)
-    lw $s0, -40($sp)
-    
-    jr $ra
-    
-    '''
-'''
-    func_cont :
-    '''
-'''
-    addu $sp, $sp, 56
-    lw $a3, -4($sp)
-    lw $a2, -8($sp)
-    lw $a1, -12($sp)
-    lw $a0, -16($sp)
-    lw $t9, -20($sp)
-    lw $t8, -24($sp)
-    lw $t7, -28($sp)
-    lw $t6, -32($sp)
-    lw $t5, -36($sp)
-    lw $t4, -40($sp)
-    lw $t3, -44($sp)
-    lw $t2, -48($sp)
-    lw $t1, -52($sp)
-    lw $t0, -56($sp)
-    
-    '''
 
 
 

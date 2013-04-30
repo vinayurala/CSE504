@@ -1,20 +1,16 @@
 void main()
 {
 	int a, b, c;
+	int d[];
 	b = 2;
 	c = 3;
 	a = 1;
-	//a = ++b * c-- + 5;
-	//a = -b + c;
+	d = new int [10];
 	b = 1;
 	a = 4;
 	c = a - 5 - b;
-	while (b < 2 && a > 3) do
-	{
-		c = b % 2;
-		b++;
-		a--;
-	} 
+	d[c] = a + b;
+	c = d[0] + b;
 	print (a+b);
 	return;
 }

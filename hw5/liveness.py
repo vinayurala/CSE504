@@ -42,6 +42,7 @@ def liveness (icLines):
     rparen_idx = args_str.index(')')
     args = args_str[lparen_idx+1:rparen_idx]
     idx = 0
+    funcn_args = list()
     for arg in args:
         if arg is "," or arg is " ":
             pass
@@ -85,7 +86,7 @@ def liveness (icLines):
                 (lhs, rhs) = line.split('=', 2)
 
             lhs = lhs.replace(" ", "")
-            if not any(i in rhs for i in rel_ops):
+            if not any(i in rhs for i in rel_ops) and not lhs in funcn_args:
                 defSet.add(lhs)
                 defined_var.add(lhs)        
 
@@ -116,11 +117,11 @@ def buildInterferenceGraph(inSets, outSets):
     varSet = set()
     for inSet in inSets:
         for var in inSet:
-            if var:
+            if var and not var in funcn_args:
                 varSet.add(var)
     for outSet in outSets:
         for var in outSet:
-            if var:
+            if var and not var in funcn_args:
                 varSet.add(var)
     
     varSet = varSet.union(set(defined_var))
@@ -233,15 +234,18 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
             coloredList[keys] = colorV 
             colorV = (colorV + 1) % 15
     
-    arg_
+    argcolorList = dict()
+    arg_regs = "$a"
+    arg_ridx = 0
     for arg in funcn_args:
-        
+        argcolorList[arg] = arg_regs + str(arg_ridx)
+        arg_ridx += 1
 
-    return (coloredList, spilledList)
+    return (coloredList, spilledList, argcolorList)
 
 
 if __name__ == "__main__":
-    with open("test.ic") as f:
+    with open("test1.ic") as f:
         lines = f.readlines()
     
     inSetList = list()
@@ -260,7 +264,7 @@ if __name__ == "__main__":
             
     for icLines in all_lines:
         icLines = icLines[::-1]
-        liveness(icLines)
+        (inSets, outSets, argColorList) = final_liveness(icLines)
         inSets = inSets[::-1]
         outSets = outSets[::-1]
         inSetList.append(inSets)
@@ -278,7 +282,7 @@ if __name__ == "__main__":
         print ""
         
         intGraph = buildInterferenceGraph(inSets, outSets)
-        (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
+        (coloredList, spilledList, argColorList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
         print "Colored List: "
         print coloredList
         print ""
