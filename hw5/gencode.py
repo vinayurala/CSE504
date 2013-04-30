@@ -241,25 +241,21 @@ def gencode(node):
         temp_blk.append(label_str)
 
     elif node.type is "for":
+        single_var_flag = 0
         end_for_lid = recent_for_lid
-        blk_str = se_extractor(node.children[0])
-        temp_blk.append(blk_str)
-        blk_str = ae_extractor(node.children[2])
-        label_str = "if not " + tVar + str(tID - 1) + " goto label end_for_lid" + str(end_for_lid) + "\n"
-        temp_blk.append(label_str)
-        end_for_lid += 1
+        gencode(node.children[0])
+        clear_stack()
         label_str = "label for_lid" + str(for_lid) + " :\n"
         for_lid += 1
         temp_blk.append(label_str)
-        temp_blk.append(blk_str)
-        blk2 = gencode(node.children[5])
-        blk_str = se_extractor(node.children[4])
-        if not blk_str is None:
-            if post_dec_str:
-                temp_blk = place_seopt(blk2, post_dec_str)
-            else:
-                temp_blk = place_seopt(blk2, blk_str)
-
+        gencode(node.children[2])
+        clear_stack()
+        label_str = "if not " + tVar + str(tID - 1) + " goto label end_for_lid" + str(end_for_lid) + "\n"
+        temp_blk.append(label_str)
+        end_for_lid += 1
+        gencode(node.children[5])
+        gencode(node.children[4])
+        clear_stack()
         label_str = "goto label for_lid" + str(for_lid - 1) + "\n"
         temp_blk.append(label_str)
         label_str = "label end_for_lid" + str(end_for_lid - 1) + " :\n"

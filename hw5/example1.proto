@@ -69,5 +69,11 @@ void main()
 	b = 4;
 	c = a - b;
   }
+  
+  for (c = 0; c < 10; c++)
+  {
+	a = a + 4;
+  } 
+		
   return;
 }

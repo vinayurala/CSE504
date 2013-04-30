@@ -1,106 +1,67 @@
 temp:
 {
 x = 2
-
 label while_lid1 :
-
 t1 = x < 2
-
 if not t1 goto label end_while_lid1
-
 x = x - 1
-
 t2 = 5 % 2
-
 e = t2
-
 goto label while_lid1
-
 label end_while_lid1 :
-
 label do_while_lid1 :
-
 label while_lid3 :
-
 t3 = e < 10
-
 if not t3 goto label end_while_lid2
-
 t4 = 4 * 3
-
 t5 = e + t4
-
 e = t5
-
 goto label while_lid3
-
 label end_while_lid2 :
-
 t6 = x + 1
-
 x = t6
-
 t7 = x > 2
-
 if t7 goto label do_while_lid1
-
 ret 3
 }
+
 main:
 {
 a = 1
-
 obj = new myclass()
-
 obj.x = a
-
 obj.y = 1
-
 arr = new int[10]
-
 d = 1
-
 c = 1
-
 t8 = c * d
-
 t9 = 5 - t8
-
 b = t9
-
 a = temp ( 3 , 4 ) 
-
 t10 = a > b
-
 if not t10 goto label else_lid1
-
 a = 1
-
 t11 = c < 0
-
 if not t11 goto label end_if_lid2
-
 c = 0
-
 label end_if_lid2 :
-
 b = 5
-
 t12 = a + b
-
 c = t12
-
 goto label end_if_lid1 
-
 label else_lid1 :
-
 b = 4
-
 t13 = a - b
-
 c = t13
-
 label end_if_lid1 :
-
+c = 0
+label for_lid1 :
+t14 = c < 10
+if not t14 goto label end_for_lid1
+t15 = a + 4
+a = t15
+c = c + 1
+goto label for_lid1
+label end_for_lid1 :
 ret
 }
