@@ -26,7 +26,8 @@ post_op_list = list()
 scratch_stack = list()
 function_called = False
 
-three_ops = ["+", "-", "*", "/", "%", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "[", "]", ".", "="]
+three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
+rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
 two_ops = ["UMINUS", "NOT"]
 inc_dec = ["++", "--"]
 
@@ -45,6 +46,7 @@ def clear_stack():
         return
 
     scratch_stack = scratch_stack[::-1]
+    #print scratch_stack
     
     if "(" in scratch_stack and ")" in scratch_stack and "," in scratch_stack:   # Function Call
         if "=" in scratch_stack:
@@ -130,13 +132,41 @@ def clear_stack():
             if str3 in three_ops:
                 if str3 is "=":
                     tStr = str2 + " " + str3 + " " + str1 +"\n"
-                    temp_blk.append(tStr)
+                    temp_blk.append(tStr)     
+
                 else:
                     tStr = tVar + str(tID) + " = " + str2 + " " + str3 + " " + str1 + "\n"
                     temp_blk.append(tStr)
                     tStr = tVar + str(tID)
                     tID += 1
                     scratch_stack.append(tStr)
+
+            elif any(i in rel_ops for i in scratch_stack):
+                scratch_stack.extend([str3, str1, str2])
+                idx = 1
+                line_list = list()
+                while scratch_stack:
+                    str1 = scratch_stack.pop()
+                    if str1 in rel_ops:
+                        if not str1 in ["&&", "||"]:
+                            tList = list(tStr)
+                            str1 += " "
+                            tList.insert(2, str1)
+                            tStr = "".join(tList)
+                            line_list.append(tStr)
+                            tStr = str()
+                        else:
+                            str1 += " " 
+                            line_list.insert(idx, str1)
+                            idx += 2
+                    else:
+                        tStr += str1 + " "
+
+                tStr = "".join(line_list)
+                tStr = tVar + str(tID) + " = " + tStr + "\n"
+                tID += 1
+                temp_blk.append(tStr)
+            
         else:
             #if not pre_op:
             #    str1, str3 = str3, str1
@@ -550,6 +580,8 @@ def gencode(node):
 
 def final_codegen(root):
     gencode(root)
+    for line in temp_blk:
+        print line
     return temp_blk
 
 if __name__ == "__main__":

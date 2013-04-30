@@ -15,7 +15,7 @@ int temp(int y, int z)
   {
      int b;
   }
-  while (x < 2) do
+  while (x < 2 && e != 0) do
   {
 	x--;
 	e = 5 % 2;

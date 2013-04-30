@@ -19,7 +19,6 @@ except IOError:
 #wellformed(astRoot, decl, defined, classobj)
 #print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
-
 function_lines = list()
 all_lines = list()
 for line in gencode_blocks:
@@ -37,14 +36,18 @@ spilledMapList = list()
 for icLines in all_lines:
     icLines = icLines[::-1]
     (inSets, outSets) = final_liveness(icLines)
+    inSets = inSets[::-1]
+    outSets = outSets[::-1]
     intGraph = buildInterferenceGraph(inSets, outSets)
     (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
     tLines = list()
+    inSets = outSets = list()
     tLines = gencode_blocks[:]
     for var in spilledList:
         (gencode_blocks, tID) = modifyIC(tLines, var, tID)
     coloredMapList.append(coloredList)
     spilledMapList.append(spilledList)
+    coloredList = spilledList = list()
 
 idx = 0
 for coloredList in coloredMapList:
@@ -54,6 +57,7 @@ for coloredList in coloredMapList:
 print "Spilled lists: "
 for spilledList in spilledMapList:
     print spilledList
+
 '''        
 asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
 fileName = sys.argv[1]

@@ -4,20 +4,28 @@ import cStringIO, tokenize
 import re
 import itertools
 
-inSets = list()
-outSets = list()
+#inSets = list()
+#outSets = list()
 defined_var = set()
+
+rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
 
 def liveness (icLines):
     useSet = set()
     defSet = set()
     inSet = set()
     outSet = set()
-    global inSets
-    global outSets
+    outSets = list()
+    inSets = list()
+
+    #global inSets
+    #global outSets
     global defined_var
+
     rhsVars = []
     tList = []
+    outSets = inSets = list()
+    defined_var = set()
     
     ret_str = icLines.pop(1)
     ret_val = ret_str.split()
@@ -62,7 +70,7 @@ def liveness (icLines):
             else:
                 continue
         elif not "print" in line:            
-            if '==' in line:
+            if '==' in line or '!=' in line:
                 idx = line.index('=')
                 lhs = line[0:idx]
                 rhs = line[idx+1:len(line)]
@@ -70,8 +78,10 @@ def liveness (icLines):
                 (lhs, rhs) = line.split('=', 2)
 
             lhs = lhs.replace(" ", "")
-            defSet.add(lhs)
-            defined_var.add(lhs)        
+            if not any(i in rhs for i in rel_ops):
+                defSet.add(lhs)
+                defined_var.add(lhs)        
+
             rhsVars = rhs.split()
             for var in rhsVars:
                 if not var in ["+", "-", "*", "/", "%", "neg", "not", "&&", "||", "<", ">", ">=", "<=", "!=", "=="] and not var.isdigit() and var != "input":
@@ -87,9 +97,11 @@ def liveness (icLines):
         inSets.append(inSet)
         outSets.append(outSet)  
 
+    return (inSets, outSets)
+
 
 def final_liveness (icLines):
-    liveness(icLines)
+    (inSets, outSets) = liveness(icLines)
     return (inSets, outSets)
 
 def buildInterferenceGraph(inSets, outSets):
@@ -222,6 +234,8 @@ if __name__ == "__main__":
     with open("test.ic") as f:
         lines = f.readlines()
     
+    inSetList = list()
+    outSetList = list()
     function_lines = list()
     all_lines = list()
     for line in lines:
@@ -237,17 +251,28 @@ if __name__ == "__main__":
     for icLines in all_lines:
         icLines = icLines[::-1]
         liveness(icLines)
+        inSets = inSets[::-1]
+        outSets = outSets[::-1]
+        inSetList.append(inSets)
+        outSetList.append(outSets)
+        ouSets = inSets = list()
+
+
+    inSets = outSets = list()
+    for (inSets, outSets) in (inSetList, outSetList):
         print "Insets :"
         print inSets
+        print ""
         print "Outsets: "
         print outSets
+        print ""
         
-    inSets = inSets[::-1]
-    outSets = outSets[::-1]
-    intGraph = buildInterferenceGraph(inSets, outSets)
-    (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
-    print "Colored List: "
-    print coloredList
-    print "Spilled List: "
-    print spilledList
+        intGraph = buildInterferenceGraph(inSets, outSets)
+        (coloredList, spilledList) = graphColoring(intGraph, 1, icLines, inSets, outSets, tID, 0)
+        print "Colored List: "
+        print coloredList
+        print ""
+        print "Spilled List: "
+        print spilledList
+        print ""
 

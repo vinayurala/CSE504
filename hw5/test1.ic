@@ -1,31 +1,18 @@
 temp (y, z):
 {
 x = 2
-
 e = 1
-
 label while_lid1 :
-
-t1 = x < 2
-
+t1 = x < 2 && e != 0 
 if not t1 goto label end_while_lid1
-
 x = x - 1
-
 t2 = 5 % 2
-
 e = t2
-
 t3 = y + 1
-
 y = t3
-
 goto label while_lid1
-
 label end_while_lid1 :
-
 label do_while_lid1 :
-
 label while_lid3 :
 
 t4 = e < 10
@@ -138,3 +125,10 @@ label end_for_lid1 :
 
 ret
 }
+ColoredList[0]:
+{'e': 6, 't6': 5, 't7': 7, 't5': 4, 't2': 3, 't3': 2, 'y': 1, 'x': 0, 'z': 8}
+ColoredList[1]:
+{'a': 9, 'c': 8, 'b': 7, 'd': 6, 't9': 5, 'obj.x': 10, 'obj.y': 11, 't14': 4, 't15': 3, 't17': 2, 't10': 1, 't11': 0, 'obj.arr[0]': 12}
+Spilled lists: 
+[]
+[]

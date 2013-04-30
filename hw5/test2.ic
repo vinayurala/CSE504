@@ -1,0 +1,17 @@
+main ():
+{
+b = 2
+c = 3
+a = 1
+label while_lid1 :
+t1 = b < 2 && a > 3 
+if not t1 goto label end_while_lid1
+t2 = b % 2
+b = t2
+a = a + 1
+goto label while_lid1
+label end_while_lid1 :
+t3 = a + b
+print (t3)
+ret
+}

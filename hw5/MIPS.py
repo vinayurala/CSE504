@@ -38,18 +38,24 @@ def genMIPSCode (icLines, coloredList, spilledList):
         tVar = "var" + str(tIdx)
         tIdx += 1
         spilledVars[var] = tVar
-    tStr = str() + "\n"
+    tStr = str()
     
     opList = ["+", "-", "*", "/", "%"]
-    relop = ["<", ">", "<=", ">=", "==", "!="]
+    relop = ["<", ">", "<=", ">=", "==", "!=", "&&", "||"]
     scratchText = mipsTemplate["space"] + "\n.text \n main:\n"
     mipsLines.append(scratchText)
     
     count = 0
+    icLines = filter(None, (line.rstrip() for line in icLines))
     for line in icLines:
+        print line
         tStr = str()
+
+        if "(" in line or ")" in line or ":" in line:
+            continue
+
         if "=" in line:
-            if "==" in line:
+            if "==" in line and '!=' in line:
                 idx = line.find('=')
                 lhs = line[0:idx]
                 rhs = line[idx+1:len(line)]
@@ -66,7 +72,7 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 tStr += "move " + registerMap[coloredList[lhs]] + ", $v0" + "\n"
     
                     
-            elif tList[0] == new and tList[1] in classdict.keys():                      ################ For Classes
+            elif tList[0] == "new" and tList[1] in classdict.keys():                      ################ For Classes
                 count = len(classdict[tList[1]])
                 count = count*4
                 data_section = "\n .align 4\n"
@@ -207,10 +213,20 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 tStr = str()
                 str1 = ()
                 str2 = ()
-                
+
+                if "&" in rhs:
+                    invert_condn = 0
+                elif "|" in rhs:
+                    invert_condn = 1
+                else:
+                    invert_condn = 2
+
                 tIdx = icLines.index(line)
+                nextLine = icLines[tIdx + 1]
+                '''
                 line1 = icLines[tIdx-2]
                 line2 = icLines[tIdx+1]
+
                 if "do_while_lid" in line2:
                     nextLine = line2
                 
@@ -222,35 +238,55 @@ def genMIPSCode (icLines, coloredList, spilledList):
                 
                 if "end_for_lid" in line1:
                     nextLine = line1
+                '''
                 
                 labelLine = nextLine.split(' ')
                 labelStr = labelLine[len(labelLine) - 1]
                 
-                if re.match("do_while_lid", labelStr):
-                    opcode = mipsCodeMap[tList[1]]
-                else:
-                    opcode = mipsInvCodeMap[tList[1]]
+                idx = 0
+                while idx < len(tList):
+                    if tList[idx] == "&" and tList[idx+1] == "&":
+                        idx += 2                    
+                    elif tList[idx] == "|" and tList[idx+1] == "|":
+                        idx += 2
+                    else:
 
-                if tList[0].isdigit():
-                    str1 = "li $s6, " + str(tList[0]) + "\n"
-                    op1 = "$s6"
-                else:
-                    op1 = registerMap[coloredList[tList[0]]]
+                        if re.match("do_while_lid", labelStr):
+                            if invert_condn == 2 :
+                                opcode = mipsCodeMap[tList[idx + 1]]
+                            else:
+                                opcode = mipsInvCodeMap[tList[idx + 1]]
+                        else:
+                            if invert_condn == 2:
+                                opcode = mipsInvCodeMap[tList[idx + 1]]
+                            else:
+                                opcode = mipsCodeMap[tList[idx + 1]]
+                    
+                        if tList[idx].isdigit():
+                            str1 = "li $s6, " + str(tList[idx]) + "\n"
+                            op1 = "$s6"
+                        else:
+                            op1 = registerMap[coloredList[tList[idx]]]
+                        
+                        if tList[idx + 2].isdigit():
+                            str2 = "li $s7, " + str(tList[idx + 2]) + "\n"
+                            op2 = "$s7"
+                        else:
+                            op2 = registerMap[coloredList[tList[idx + 2]]]
+                            
+                        if str1 and str2:
+                            tStr = str1 + str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
+                        elif str1:
+                            tStr = str1 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
+                        elif str2:
+                            tStr = str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
+                        else:
+                            tStr = opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
 
-                if tList[2].isdigit():
-                    str2 = "li $s7, " + str(tList[2]) + "\n"
-                    op2 = "$s7"
-                else:
-                    op2 = registerMap[coloredList[tList[2]]]
-
-                if str1 and str2:
-                    tStr = str1 + str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
-                elif str1:
-                    tStr = str1 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
-                elif str2:
-                    tStr = str2 + opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
-                else:
-                    tStr = opcode + " " + op1 + ", " + op2 + ", " + str(labelStr) + "\n"
+                    idx += 3
+                    mipsLines.append(tStr)
+                    invert_condn -= 1
+                    tStr = str()
 
         elif "print" in line:
             tokens = tokenize.generate_tokens(cStringIO.StringIO(line).readline)
@@ -351,9 +387,6 @@ def genMIPSCode (icLines, coloredList, spilledList):
         elif "}" in line:
             tStr = functemplate["func_return"]
 
-        elif 
-            
-
         mipsLines.append(tStr)
 
     mipsLines.append(mipsTemplate["exit"])
@@ -378,9 +411,11 @@ if __name__ == "__main__":
     #coloredList = {'t14': 14, 't15': 13, 't16': 12, 't17': 0, 't10': 11, 't11': 1, 't12': 10, 't13': 9, 't18': 2, 't19': 8, 'a': 7, 'c': 6, 'b': 5, 't8': 3, 't9': 4, 't6': 3, 't7': 2, 't4': 4, 't5': 1, 't2': 5, 't3': 0, 't1': 6, 's': 7, 't20': 8}
     
     
-    coloredList = {'a': 4, 'b': 5, 'd': 3, 't4': 2, 't5': 6, 't2': 7, 't3': 1, 't1': 0}
+    #coloredList = {'a': 4, 'b': 5, 'd': 3, 't4': 2, 't5': 6, 't2': 7, 't3': 1, 't1': 0}
     #coloredList = {'a': 3, 'b': 4, 'd': 2, 't2': 5, 't3': 1, 't1': 0}
     spilledList = []
+    coloredList = {'a': 2, 'c': 3, 'b': 1, 't2': 0, 't3': 4}
+
     mipsLines = genMIPSCode(lines, coloredList, spilledList)
     print "MIPS code: "
     for line in mipsLines:
@@ -391,8 +426,9 @@ push ={ "push" : " \t addi $sp, $sp, -4 \n \t sw str, 0($sp)" }
 pop = { "pop" : " \t addi $sp, $sp, 4 \n " }
 popstr = { "popstr" : "\t lw str,0($sp) \n \t add $sp,$sp,4 \n"}
 
+'''
 func_call :
-
+'''
 '''
     sub $sp, $sp, 56
     sw $a3, 52($sp)
@@ -413,9 +449,9 @@ func_call :
     //jal str
     
     '''
-
+'''
 new_func :
-
+'''
 '''
     subu $sp, $sp, 40
     sw $ra, 36($sp)
@@ -432,9 +468,9 @@ new_func :
     '''
 functemplate = { "new_func" : "subu $sp, $sp, 40 \n sw $ra, 36($sp) \n sw $fp, 32($sp) \n sw $s7, 28($sp) \n sw $s6, 24($sp) \n sw $s5, 20($sp) \n sw $s4, 16($sp) \nsw $s3, 12($sp) \n sw $s2, 8($sp) \n sw $s1, 4($sp) \n sw $s0, 0($sp) \n  " , "func_return" : " addu $sp, $sp, 40 \n lw $ra, -4($sp) \n lw $fp, -8($sp) \n lw $s7, -12($sp) \n lw $s6, -16($sp)\n lw $s5, -20($sp) \n lw $s4, -24($sp) \n lw $s3, -28($sp) \n lw $s2, -32($sp) \n lw $s1, -36($sp) \n lw $s0, -40($sp) \n jr $ra \n" , "func_call" : " sub $sp, $sp, 56 \n sw $a3, 52($sp) \n sw $a2, 48($sp) \n sw $a1, 44($sp) \n sw $a0, 40($sp) \n sw $t9, 36($sp) \n sw $t8, 32($sp) \n sw $t7, 28($sp) \n sw $t6, 24($sp) \n sw $t5, 20($sp) \n sw $t4, 16($sp) \n sw $t3, 12($sp) \n sw $t2, 8($sp) \n sw $t1, 4($sp) \n sw $t0, 0($sp) \n" , "func_cont" : " addu $sp, $sp, 56 \n lw $a3, -4($sp) \n lw $a2, -8($sp) \n lw $a1, -12($sp) \n lw $a0, -16($sp) \n lw $t9, -20($sp) \n lw $t8, -24($sp) \n lw $t7, -28($sp) \n lw $t6, -32($sp) \n lw $t5, -36($sp) \n lw $t4, -40($sp) \n lw $t3, -44($sp) \n lw $t2, -48($sp) \n lw $t1, -52($sp) \n lw $t0, -56($sp) "}
 
-
+'''
 func_return :
-
+'''
 '''
     
     addu $sp, $sp, 40
@@ -452,9 +488,9 @@ func_return :
    jr $ra
     
     '''
-
+'''
 func_cont :
-
+'''
 '''
     addu $sp, $sp, 56
     lw $a3, -4($sp)
