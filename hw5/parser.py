@@ -835,6 +835,7 @@ def declareonce(node,decl,parent):
 
 def welltyped(node,vars,classobj):
     global field
+    global currentclass
     #print vars
     iterable_list = node.children[:]
     
@@ -850,8 +851,19 @@ def welltyped(node,vars,classobj):
         return
 
     elif node.type == "FunDecl":
-        iterable_list = node.children[5:]
-    
+        iterable_list = node.children[4:]
+
+
+    if node.type == "Formals":
+        type = node.children[0].leaf
+        
+        id = node.children[1].leaf
+        vars[id] = type
+        if len(node.children) > 3 :
+            welltyped(node.children[4],vars,classobj)
+        return
+
+
     elif node.type == "VarDecl":
         if node.children[0].leaf == "int" or node.children[0].leaf == "bool":
             type = node.children[0].leaf
@@ -861,7 +873,7 @@ def welltyped(node,vars,classobj):
                 vars[varnode.children[0].leaf] = type
                 varlist = varlist.children[2]
             varnode = varlist.children[0]
-            print vars
+            #print vars
             vars[varnode.children[0].leaf] = type
             node.check = type
         
@@ -944,6 +956,11 @@ def welltyped(node,vars,classobj):
 
     elif node.type == "SEEq":
         ae = node.children[2]
+        lhs = node.children[0]
+        if lhs.children[0].type == "FieldAccess":
+            if len(lhs.children[0].children) > 1:
+                node.check = "int"
+                return
         if ae.children[0].type == "Primary":
             if ae.children[0].children[0].type == "NewObject" or ae.children[0].children[0].type == "FunctionCall":
                 node.check = "int"
@@ -976,6 +993,12 @@ def welltyped(node,vars,classobj):
             sys.exit(-1)
         return
 
+    elif node.type == "AEOpt":
+        if len(node.children) > 0:
+            welltyped(node.children[0],vars,classobj)
+        node.check = node.children[0].check
+    
+
     elif node.type == "print":
         welltyped(node.children[0],vars,classobj)
         if node.children[0].check != "int":
@@ -992,10 +1015,7 @@ def welltyped(node,vars,classobj):
         if node.children[0].check != "bool":
             print "WellTyped ERROR: if"
             sys.exit(-1)
-        for child in iterable_list:
-            if child.check == "error":
-                print "WellTyped ERROR: if"
-                sys.exit(-1)
+        
         return
 
     elif node.type == "while":
@@ -1007,10 +1027,7 @@ def welltyped(node,vars,classobj):
         if node.children[0].check != "bool":
             print "WellTyped ERROR: while"
             sys.exit(-1)
-        for child in iterable_list:
-            if child.check == "error":
-                print "WellTyped ERROR: while"
-                sys.exit(-1)
+        
         return
 
     elif node.type == "do":
@@ -1022,10 +1039,7 @@ def welltyped(node,vars,classobj):
         if node.children[1].check != "bool":
             print "WellTyped ERROR: D0-while"
             sys.exit(-1)
-        for child in iterable_list:
-            if child.check == "error":
-                print "WellTyped ERROR: Do-while"
-                sys.exit(-1)
+
         return
 
     elif(node.type == "for"):
@@ -1041,11 +1055,6 @@ def welltyped(node,vars,classobj):
             print "WellTyped ERROR: for"
             sys.exit(-1)
 
-        iterable_list = node.children[:]
-        for child in iterable_list:
-            if child.check == "error":
-                print "WellTyped ERROR: for"
-                sys.exit(-1)
         return
 
 
@@ -1088,8 +1097,7 @@ def welltyped(node,vars,classobj):
         if len(node.children) > 1:
             field = 1
             welltyped(node.children[0],vars,classobj)
-            if node.children[0].check != "error":
-                node.check = node.children[2].check
+            node.check = "int"
             field = 0
         else:
             welltyped(node.children[0],vars,classobj)
@@ -1110,6 +1118,9 @@ def welltyped(node,vars,classobj):
         welltyped(node.children[1],vars,classobj)
         if node.children[1].check != "int":
             node.check = "error"
+            if node.check == "error":
+                print "WellTyped ERROR: ArrayAccess Part 1"
+                sys.exit(-1)
             return
         if x == 1:
             field = 1
@@ -1126,6 +1137,9 @@ def welltyped(node,vars,classobj):
         id = node.children[1].leaf
         if id not in classdict.keys():
             node.check = "error"
+            if node.check == "error":
+                print "WellTyped ERROR: NewObject"
+                sys.exit(-1)
         else:
             node.check = node.children[1].leaf
         return
@@ -1153,6 +1167,10 @@ def welltyped(node,vars,classobj):
 
             return
         else:
+            if currentclass != None:
+                classobj[id] = currentclass
+                node.check = currentclass
+                return
             if id in vars.keys():
                 node.check = vars[id]
             else:
@@ -1238,47 +1256,84 @@ def find(node):
 if __name__ == "__main__":
     s = '''
         int a,b,c,d;
-        
-        
         class myclass
         {
         int x,y,z;
+        
         }
         
+        int temp(int y, int z)
+        {
+        //bool b;
+        int x;
+        int e;
+        x=2;
+        e = 1;
+        {
+        int b;
+        }
+        while (x < 2 && e != 0) do
+        {
+        x--;
+        e = 5 % 2;
+        y = y + -e;
+        }
+        
+        do
+        {
+        while (e < 10) do
+        {
+        e = e + 4 * 3;
+        }
+        x = x + 1;
+        } while(x > 2);
+        
+        return 3;
+        }
         
         void main()
         {
         int a,b;
-        //myclass obj;
-        a=1;
-        //obj = new myclass ();
-        //obj.x = a;
-        //obj.y = 1;
+        myclass obj;
+        int arr[];
+        a = 1;
+        obj = new myclass ();
+        obj.x = a;
+        obj.y = 1;
+        arr = new int [10];
         {
         int fg;
-        
-        
-        
         }
-        d=1;
-        c=1;
-        b=c*d;
+        d = 1;
+        c = 1;
+        b = ++c * d-- + 5;
+        //b = c * d - 5;
+        //arr[0] = 5;
+        //b = c++;
+        //b = arr[++c]++;
         a = temp(3,4);
+        if (a > b) then
+        {
+        a = 1;
+        if ( c < 0) then
+        {
+        c = 0;
+        }
+        b = 5;
+        c = a + b;
+        }
+        else
+        {
+        b = 4;
+        c = a - b;
+        }
+        
+        for (c = 0; c < 10; c++)
+        {
+        a = a + 4;
+        }
+		
         return;
-        
-        }
-        
-        int temp( int b)
-        {
-        
-        //bool b;
-        //x=2;
-        {
-        int b;
-        }
-        
-        return 3;
-        
         }
             '''
     result = yacc.parse(s)

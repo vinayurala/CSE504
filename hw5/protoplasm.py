@@ -39,6 +39,7 @@ find(astRoot)
 declareonce(astRoot,decl,parent)
 
 wellformed(astRoot,decl,defined,classobj)
+welltyped(astRoot, vars, classobj)
 
 #wellformed(astRoot, decl, defined, classobj)
 
