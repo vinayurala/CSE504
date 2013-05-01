@@ -11,12 +11,35 @@ if (len(sys.argv) != 2):
 
 try:
     f = open(sys.argv[1], "r")
-    astRoot = yacc.parse(f.read())
+    lines = f.read()
+    #result = yacc.parse(f.read())
 except IOError:
     print "File " + sys.argv[1] + " not found!!"
     sys.exit(-1)
 
-wellformed(astRoot, decl, defined, classobj)
+line_str = "".join(lines)
+#result = parser.parse(line_str)
+#astRoot = yacc.parse(line_str)
+astRoot = yacc.parse(line_str)
+print line_str
+#print 'Done with parsing'
+
+ismain(astRoot)
+if done == 0:
+    print "Main function ERROR: Main Function Not WellFormed"
+    sys.exit(-1)
+
+isreturn(astRoot)
+
+find(astRoot)
+print func[:]
+print classdict
+declareonce(astRoot,decl,parent)
+
+wellformed(astRoot,decl,defined,classobj)
+
+#wellformed(astRoot, decl, defined, classobj)
+
 #print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
 function_lines = list()
@@ -69,8 +92,7 @@ print "Functions:"
 for func_name in functions:
     print func_name
 '''
-
-'''        
+       
 asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
 fileName = sys.argv[1]
 (targetFile, _) = fileName.split('.', 2)
@@ -108,4 +130,4 @@ if data_section:
         scratchText = str()
         for var in spilledVars:
             scratchText += spilledVars[var] + ":\t .word 0\n"
-'''
+

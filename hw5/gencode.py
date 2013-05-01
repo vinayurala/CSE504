@@ -238,7 +238,7 @@ def gencode(node):
     global classdict
     global classobjdict
 
-    #classdict["myclass"] = ["x", "y", "z", "arr[]"]
+    classdict["myclass"] = ["x", "y", "z", "arr[]"]
 
     blk1 = list()
     blk2 = list()

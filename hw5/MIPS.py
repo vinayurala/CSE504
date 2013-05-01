@@ -28,7 +28,7 @@ def init_reg_map():
             registerMap[k] = "$s" + str(ctr-10)
         ctr += 1
 
-def genMIPSCode (icLines, coloredList, spilledList):
+def genMIPSCode (icLines, coloredList, spilledList, argsColorList, func_name):
     mipsLines = list()
     global arr_dict
     global size_dict
@@ -208,10 +208,16 @@ def genMIPSCode (icLines, coloredList, spilledList):
             
             
             elif (tList[0] == "new"):
-                arr_dict[lhs] = "arr_"+lhs
-                size_dict[lhs] = "size_"+lhs
-                data_section = size_dict[lhs] + ":\t.word  " + tList[3] + "\n .align 4\n"
-                data_section += arr_dict[lhs] + ":\t.space  " + str(4 * int(tList[3])) + "\n"
+                if tList[1] == "int" or tList[1] == "bool":
+                    arr_dict[lhs] = "arr_"+lhs
+                    size_dict[lhs] = "size_"+lhs
+                    data_section = size_dict[lhs] + ":\t.word  " + tList[3] + "\n .align 4\n"
+                    data_section += arr_dict[lhs] + ":\t.space  " + str(4 * int(tList[3])) + "\n"
+                else:
+                    obj_dict[lhs] = "obj_"+lhs
+                    objsize_dict[lhs] = "objsize_"+lhs
+                    data_section = objsize_dict[lhs] + ":\t.word " + membersize[lhs] + "\n .align 4\n"
+                    data_section += obj_dict[lhs] + ":\t.space " + str(4 * membersize[lhs] + "\n"
             
             elif (any (op in rhs for op in relop)):
                 tStr = str()
@@ -396,17 +402,6 @@ def genMIPSCode (icLines, coloredList, spilledList):
 
 
     return mipsLines
-
-
-def one_run_generation(icLines, coloredList, spilledList, argsColorList):
-    global data_section
-
-
-    mipsLines = genMIPSCode(icLines, coloredList, spilledList, argsColorList, func_name)
-
-    mipsLines.insert(0, scratchText)
-
-    
 
 
 if __name__ == "__main__":
