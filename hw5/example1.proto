@@ -1,82 +1,80 @@
-int a,b,c,d;
-class myclass
-{
-   int x,y,z;
-}
-
-int temp(int y, int z)
-{
-  //bool b;
-  int x;
-  int e;
-  x=2;
-  e = 1;
-  {
-     int b;
-  }
-  while (x < 2 && e != 0) do
-  {
-	x--;
-	e = 5 % 2;
-	y = y + -e;
-  }
-
-  do	
-  {
-	while (e < 10) do
-	{
-		e = e + 4 * 3;
-	}
-	x = x + 1;
-  } while(x > 2);
-
-  return 3;
-}
-
-void main()
-{
-  int a,b;
-  myclass obj; 
-  int arr[];
-  a = 1;
-  obj = new myclass ();
-  obj.x = a;
-  obj.y = 1;
-  arr = new int [10];
-  //obj.l =1;
-  //objj.x = 1;
-  {
-     int fg;
-  }
-  d = 1;
-  c = 1;
-  b = ++c * d-- + 5;
-  //b = c * d - 5;
-  //arr[0] = 5;
-  //b = c++;
-  //b = arr[++c]++;
-
-  a = temp(3,4);
-  if (a > b) then
-  {
-	a = 1;
-	if ( c < 0) then
-	{
-		c = 0;
-	}						
-	b = 5;
-	c = a + b;
-  }
-  else
-  {
-	b = 4;
-	c = a - b;
-  }
-  
-  for (c = 0; c < 10; c++)
-  {
-	a = a + 4;
-  } 
+      int a,b,c,d;
+        class myclass
+        {
+            int x,y,z;
+        
+        }
+        
+        int temp(int y, int z)
+        {
+            //bool b;
+            int x;
+            int e;
+            x=2;
+            e = 1;
+        {
+            int b;
+        }
+            while (x < 2 && e != 0) do
+        {
+            x--;
+            e = 5 % 2;
+            y = y + -e;
+        }
+        
+        do
+        {
+            while (e < 10) do
+        {
+            e = e + 4 * 3;
+            }
+            x = x + 1;
+        } while(x > 2);
+        
+            return 3;
+        }
+        
+        void main()
+        {
+            int a,b;
+            myclass obj;
+            int arr[];
+            a = 1;
+            obj = new myclass ();
+            obj.x = a;
+            obj.y = 1;
+            arr = new int [10];
+        {
+            int fg;
+        }
+            d = 1;
+            c = 1;
+            b = ++c * d-- + 5;
+        //b = c * d - 5;
+        //arr[0] = 5;
+        //b = c++;
+        //b = arr[++c]++;
+            a = temp(3,4);
+        if (a > b) then
+        {
+            a = 1;
+        if ( c < 0) then
+        {
+            c = 0;
+        }						
+            b = 5;
+            c = a + b;
+        }
+        else
+        {
+            b = 4;
+            c = a - b;
+        }
+        
+        for (c = 0; c < 10; c++)
+        {
+            a = a + 4;
+        } 
 		
-  return;
-}
+        return;
+        }

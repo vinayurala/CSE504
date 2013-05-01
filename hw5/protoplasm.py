@@ -3,7 +3,7 @@ from ply.yacc import *
 from parser import *
 from gencode import *
 from liveness import *
-#from mipsCode import *
+from MIPS import *
 
 if (len(sys.argv) != 2):
     print "Usage: python " + sys.argv[0] + " <Protofilename>"
@@ -21,19 +21,16 @@ line_str = "".join(lines)
 #result = parser.parse(line_str)
 #astRoot = yacc.parse(line_str)
 astRoot = yacc.parse(line_str)
-print line_str
 #print 'Done with parsing'
-
+'''
 ismain(astRoot)
 if done == 0:
     print "Main function ERROR: Main Function Not WellFormed"
     sys.exit(-1)
-
+'''
 isreturn(astRoot)
 
 find(astRoot)
-print func[:]
-print classdict
 declareonce(astRoot,decl,parent)
 
 wellformed(astRoot,decl,defined,classobj)
@@ -92,7 +89,7 @@ print "Functions:"
 for func_name in functions:
     print func_name
 '''
-       
+'''       
 asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
 fileName = sys.argv[1]
 (targetFile, _) = fileName.split('.', 2)
@@ -103,31 +100,41 @@ for line in asmLines:
 f1.close()
 print "Compilation succeeded and output written to " + str(targetFile)
 '''
-'''
+asmLines = list()
 mipsLines = list()
+data_section_list = list()
+spilledVarsList = list()
 idx = 0
-for icLines in function_lines:
+scratchText = mipsTemplate["space"] + "\n.text \n"
+asmLines.append(scratchText)
+
+for icLines in all_lines:
     coloredList = coloredMapList[idx]
     spilledList = spilledMapList[idx]
     argsColor = argColorList[idx]
     func_name = functions[idx]
     idx += 1
-
     init_reg_map()
-    scratchText = mipsTemplate["space"] + "\n.text \n"
-    asmLines.append(scratchText)
-
-    mipsLines = genMIPSCode(icLines, coloredList, spilledList, argsColor, func_name)
+    (mipsLines, data_section, spilledVars) = genMIPSCode(icLines, coloredList, spilledList, argsColor, func_name)
     asmLines.append(mipsLines)
-
+    data_section_list.append(data_section)
 
 asmLines.append(mipsTemplate["exit"])
 scratchText = str(".data\n")
-mipsLines.append(scratchText)
-if data_section:
-    asmLines.append(data_section)
-    if spilledVars:
-        scratchText = str()
-        for var in spilledVars:
-            scratchText += spilledVars[var] + ":\t .word 0\n"
+asmLines.append(scratchText)
+for data_section in data_section_list:
+    print data_section
+    if data_section:
+        asmLines.append(data_section)
+        if spilledVars:
+            scratchText = str()
+            for var in spilledVars:
+                scratchText += spilledVars[var] + ":\t .word 0\n"
+
+asmLines.append(scratchText)
+
+print "MIPS code: "
+for lines in asmLines:
+    line_str = "".join(lines)
+    print line_str
 

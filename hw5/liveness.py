@@ -239,10 +239,9 @@ def graphColoring(intGraph, reTryCount, ic_lines, inSets, outSets, tempIdx, last
             colorV = (colorV + 1) % 15
     
     argcolorList = dict()
-    arg_regs = "$a"
-    arg_ridx = 0
+    arg_ridx = 15
     for arg in funcn_args:
-        argcolorList[arg] = arg_regs + str(arg_ridx)
+        argcolorList[arg] = arg_ridx
         arg_ridx += 1
 
     return (coloredList, spilledList, argcolorList)

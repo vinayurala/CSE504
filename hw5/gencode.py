@@ -26,6 +26,7 @@ post_op_list = list()
 scratch_stack = list()
 function_called = False
 classobjdict = dict()
+class_size = dict()
 
 
 three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
@@ -237,8 +238,9 @@ def gencode(node):
     global function_called
     global classdict
     global classobjdict
+    global class_size
 
-    classdict["myclass"] = ["x", "y", "z", "arr[]"]
+    #classdict["myclass"] = ["x", "y", "z", "arr[]"]
 
     blk1 = list()
     blk2 = list()
@@ -473,6 +475,8 @@ def gencode(node):
         idNode = node.children[1]
         str1 = "new " + str(idNode.leaf) + " ()"
         scratch_stack.append(str1)
+        mem_list = classdict[idNode.leaf]
+        class_size[idNode] = len(mem_list) * 4
 
     elif node.type is "NewArray":
         typeNode = node.children[1]
@@ -623,8 +627,8 @@ def gencode(node):
 
 def final_codegen(root):
     gencode(root)
-    for line in temp_blk:
-        print line
+    #for line in temp_blk:
+    #    print line
     return temp_blk
 
 if __name__ == "__main__":
