@@ -22,6 +22,11 @@ line_str = "".join(lines)
 #astRoot = yacc.parse(line_str)
 astRoot = yacc.parse(line_str)
 #print 'Done with parsing'
+ismain(astRoot,done)
+if done[0] == 0:
+    print "Main function ERROR: Main Function Not WellFormed"
+    sys.exit(-1)
+
 '''
 ismain(astRoot)
 if done == 0:
@@ -107,6 +112,8 @@ spilledVarsList = list()
 idx = 0
 scratchText = mipsTemplate["space"] + "\n.text \n"
 asmLines.append(scratchText)
+scratchText = str(".data\nerror_stmt: .asciiz \"Array out of bounds!!!\"\n")
+asmLines.append(scratchText)
 
 for icLines in all_lines:
     coloredList = coloredMapList[idx]
@@ -121,9 +128,11 @@ for icLines in all_lines:
 
 asmLines.append(mipsTemplate["exit"])
 scratchText = str(".data\n")
+asmLines.append(mipsTemplate["bounds_error"])
+asmLines.append(scratchText)
+
 asmLines.append(scratchText)
 for data_section in data_section_list:
-    print data_section
     if data_section:
         asmLines.append(data_section)
         if spilledVars:
@@ -131,10 +140,20 @@ for data_section in data_section_list:
             for var in spilledVars:
                 scratchText += spilledVars[var] + ":\t .word 0\n"
 
-asmLines.append(scratchText)
-
+'''
 print "MIPS code: "
 for lines in asmLines:
     line_str = "".join(lines)
     print line_str
+'''
+fileName = sys.argv[1]
+(targetFile, _) = fileName.split('.', 2)
+targetFile += ".asm"
+f1 = open(targetFile, "w")
+for line in asmLines:
+    line_str = "".join(line)
+    f1.write(line_str)
+f1.close()
+print "Compilation succeeded and output written to " + str(targetFile)
 
+                     

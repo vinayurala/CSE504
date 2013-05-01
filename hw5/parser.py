@@ -390,7 +390,7 @@ parser = yacc.yacc()
 decl = list()
 defined = list()
 parent = None
-done = 0
+done = [0]
 vars = {}
 found = [0]
 inclass = 0
@@ -666,20 +666,19 @@ def wellformed(node,decl,defined,classobj):
     return
 ################################################################################
 
-def ismain(node):
-    global done
+def ismain(node,done):
     iterable_list = node.children[:]
     if node.type == "FunDecl":
         if node.children[1].leaf == "main" and node.children[0].leaf == "void" and node.children[4].type == "RPAREN":
             
-            done = 1
+            done[0] = 1
         elif node.children[1].leaf != "main" and node.children[0].leaf == "void":
-            print "function ERROR: Function found which is not MAIN and return type is VOID"
+            print "function ERROR: Function found which is not MAIN and return type is VOID ::: NOT ALLOWED"
             sys.exit(-1)
 
     for child in iterable_list:
         #print child.type
-        ismain(child)
+        ismain(child,done)
     return
 ################################################################################
 
@@ -945,8 +944,8 @@ def welltyped(node,vars,classobj):
 
     elif node.type == "SEEq":
         ae = node.children[2]
-        if node.children[0].type == "Primary":
-            if node.children[0].children[0].type == "NewObject" or node.children[0].children[0].type == "FunctionCall":
+        if ae.children[0].type == "Primary":
+            if ae.children[0].children[0].type == "NewObject" or ae.children[0].children[0].type == "FunctionCall":
                 node.check = "int"
                 return
         welltyped(node.children[0],vars,classobj)
@@ -1287,8 +1286,8 @@ if __name__ == "__main__":
     
     
     
-    ismain(result)
-    if done == 0:
+    ismain(result,done)
+    if done[0] == 0:
         print "Main function ERROR: Main Function Not WellFormed"
         sys.exit(-1)
     
@@ -1301,6 +1300,6 @@ if __name__ == "__main__":
     
     wellformed(result,decl,defined,classobj)
     #print vars
-    '''
+    
     welltyped(result,vars,classobj)
-    '''
+    

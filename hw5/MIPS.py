@@ -7,7 +7,8 @@ arg_num = 0
 
 mipsCodeMap = {"+": "add", "-": "sub", "*": "mul", "/": "div", "%": "div", "=": ":=", "neg": "neg", ">=": "bge", ">":"bgt", "<=":"ble", "<":"blt", "goto":"b", "==": "beq", "!=": "bne"}
 mipsInvCodeMap = {">=": "blt", ">":"ble", "<=":"bgt", "<":"bge", "==": "bne", "!=": "beq"}
-mipsTemplate = {"input": "\tli $v0, 5\n\tsyscall\n", "print": "\tli $v0, 1\n\tsyscall\n", "exit":"exit:\n\tli $v0, 10\n\tsyscall\n", "space": ".data\nspace:\t.asciiz \"\\n\"", "printLn": "\taddi $v0, $zero, 4\n\tla $a0, space\n\tsyscall\n"}
+mipsTemplate = {"input": "\tli $v0, 5\n\tsyscall\n", "print": "\tli $v0, 1\n\tsyscall\n", "exit":"exit:\n\tli $v0, 10\n\tsyscall\n", "space": ".data\nspace:\t.asciiz \"\\n\"", "printLn": "\taddi $v0, $zero, 4\n\tla $a0, space\n\tsyscall\n", "bounds_error": "oob_error:\n\tla $a0, error_stmt\n\tli $v0, 4\n\tsyscall\n"}
+
 functemplate = { "new_func" : "subu $sp, $sp, 40 \n sw $ra, 36($sp) \n sw $fp, 32($sp) \n sw $s7, 28($sp) \n sw $s6, 24($sp) \n sw $s5, 20($sp) \n sw $s4, 16($sp) \nsw $s3, 12($sp) \n sw $s2, 8($sp) \n sw $s1, 4($sp) \n sw $s0, 0($sp) \n  " , "func_return" : " addu $sp, $sp, 40 \n lw $ra, -4($sp) \n lw $fp, -8($sp) \n lw $s7, -12($sp) \n lw $s6, -16($sp)\n lw $s5, -20($sp) \n lw $s4, -24($sp) \n lw $s3, -28($sp) \n lw $s2, -32($sp) \n lw $s1, -36($sp) \n lw $s0, -40($sp) \n jr $ra \n" , "func_call" : " sub $sp, $sp, 56 \n sw $a3, 52($sp) \n sw $a2, 48($sp) \n sw $a1, 44($sp) \n sw $a0, 40($sp) \n sw $t9, 36($sp) \n sw $t8, 32($sp) \n sw $t7, 28($sp) \n sw $t6, 24($sp) \n sw $t5, 20($sp) \n sw $t4, 16($sp) \n sw $t3, 12($sp) \n sw $t2, 8($sp) \n sw $t1, 4($sp) \n sw $t0, 0($sp) \n" , "func_cont" : " addu $sp, $sp, 56 \n lw $a3, -4($sp) \n lw $a2, -8($sp) \n lw $a1, -12($sp) \n lw $a0, -16($sp) \n lw $t9, -20($sp) \n lw $t8, -24($sp) \n lw $t7, -28($sp) \n lw $t6, -32($sp) \n lw $t5, -36($sp) \n lw $t4, -40($sp) \n lw $t3, -44($sp) \n lw $t2, -48($sp) \n lw $t1, -52($sp) \n lw $t0, -56($sp) "}
 
 
@@ -174,8 +175,8 @@ def genMIPSCode (icLines, coloredList, spilledList, argsColorList, func_name):
                         tStr += "la $s6, " + str(arr_size) + "\n"
                         tStr += "lw $s6, 0($s6)\n"
                         tStr += "mul $s6, $s6, 4\n"
-                        tStr += "bltz " + registerMap[coloredList[tList[2]]] + ", exit\n"
-                        tStr += "bge " + registerMap[coloredList[tList[2]]] + ", $s6, exit\n"
+                        tStr += "bltz " + registerMap[coloredList[tList[2]]] + ", oob_error\n"
+                        tStr += "bge " + registerMap[coloredList[tList[2]]] + ", $s6, oob_error\n"
                         tStr += "la " + registerMap[coloredList[tList[0]]] + ", " +  arr_dict[tList[0]] + "\n"
                         tStr += "add " + registerMap[coloredList[tList[0]]] + ", " + registerMap[coloredList[tList[0]]] + ", " + registerMap[coloredList[tList[2]]] + "\n"
                         arr_alias_list[tList[0]] = lhs
