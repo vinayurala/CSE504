@@ -1,0 +1,28 @@
+class test
+{
+    int x, y, z;
+}
+
+int temp(int a, int b)
+{
+   int c;
+   c = a + b;
+   print (c);
+   return c;
+}
+
+void main()
+{
+   test obj;
+   int g;
+   obj = new test ();   
+
+   obj.x = 5;
+   obj.y = 2;
+   obj.z = obj.x++;
+   obj.z = temp(obj.x, obj.y);
+   print (obj.x);
+   print (obj.y);
+   print (obj.z);
+   return;
+}
