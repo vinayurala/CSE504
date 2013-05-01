@@ -78,41 +78,17 @@ for icLines in all_lines:
     functions.append(func_name)
     coloredList = spilledList = list()
     argColorMap = dict()
-'''
-idx = 0
-for coloredList in coloredMapList:
-    print "ColoredList[" + str(idx) + "]:"
-    idx += 1
-    print coloredList
-print "Spilled lists: "
-for spilledList in spilledMapList:
-    print spilledList
-print "Args color list: "
-for argsColor in argColorList:
-    print argsColor
-print "Functions:"
-for func_name in functions:
-    print func_name
-'''
-'''       
-asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
-fileName = sys.argv[1]
-(targetFile, _) = fileName.split('.', 2)
-targetFile += ".asm"
-f1 = open(targetFile, "w")
-for line in asmLines:
-    f1.write(line)
-f1.close()
-print "Compilation succeeded and output written to " + str(targetFile)
-'''
+
 asmLines = list()
 mipsLines = list()
 data_section_list = list()
 spilledVarsList = list()
 idx = 0
-scratchText = mipsTemplate["space"] + "\n.text \n"
+scratchText = mipsTemplate["space"] + "\n"
 asmLines.append(scratchText)
 scratchText = str(".data\nerror_stmt: .asciiz \"Array out of bounds!!!\"\n")
+asmLines.append(scratchText)
+scratchText = ".text\n"
 asmLines.append(scratchText)
 
 for icLines in all_lines:

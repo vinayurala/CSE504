@@ -188,11 +188,14 @@ def clear_stack():
             scratch_stack.append(str3)                                             # Pre and Post ops
             if str2 in inc_dec:
                 if pre_op:
-                    tStr = str1 + " = " + str1 + " " + str2[0] + " 1\n"
+                    tStr = tVar + str(tID) + " = " + str1 + " " + str2[0] + " 1\n"
                     temp_blk.append(tStr)
+                    tID += 1
                 else:
-                    postStr = str1 + " = " + str1 + " " + str2[0] + " 1\n"
+                    postStr = tVar + str(tID) + " = " + str1 + " " + str2[0] + " 1\n"
+                    tID += 1
                     post_op_list.append(postStr)
+                    str1 = tVar + str(tID - 1)
                 if insert_flag:
                     scratch_stack.insert(len(scratch_stack) - 1, str1)
                 else:
