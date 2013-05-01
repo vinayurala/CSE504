@@ -2,7 +2,6 @@ int a,b,c,d;
 class myclass
 {
    int x,y,z;
-   int arr1[];
 }
 
 int temp(int y, int z)
@@ -44,7 +43,6 @@ void main()
   obj.x = a;
   obj.y = 1;
   arr = new int [10];
-  obj.arr1 = new int[10];
   //obj.l =1;
   //objj.x = 1;
   {
@@ -57,7 +55,7 @@ void main()
   //arr[0] = 5;
   //b = c++;
   //b = arr[++c]++;
-  obj.arr[0] = c * d;
+
   a = temp(3,4);
   if (a > b) then
   {

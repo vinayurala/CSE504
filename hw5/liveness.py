@@ -8,6 +8,7 @@ import itertools
 #outSets = list()
 defined_var = set()
 funcn_args = list()
+funcn_name = str()
 
 rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
 
@@ -23,6 +24,7 @@ def liveness (icLines):
     #global outSets
     global defined_var
     global funcn_args
+    global funcn_name
 
     rhsVars = []
     tList = []
@@ -37,10 +39,12 @@ def liveness (icLines):
         else:
             outSet.add(ret_val[1])
 
+    funcn_name = str()
     args_str = icLines.pop(len(icLines)-1)
     lparen_idx = args_str.index('(')
     rparen_idx = args_str.index(')')
     args = args_str[lparen_idx+1:rparen_idx]
+    funcn_name = args_str[0:lparen_idx]
     idx = 0
     funcn_args = list()
     for arg in args:
@@ -105,12 +109,12 @@ def liveness (icLines):
         inSets.append(inSet)
         outSets.append(outSet)  
 
-    return (inSets, outSets)
+    return (inSets, outSets, funcn_name)
 
 
 def final_liveness (icLines):
-    (inSets, outSets) = liveness(icLines)
-    return (inSets, outSets)
+    (inSets, outSets, funcn_name) = liveness(icLines)
+    return (inSets, outSets, funcn_name)
 
 def buildInterferenceGraph(inSets, outSets):
     graph = dict()

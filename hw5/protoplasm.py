@@ -37,7 +37,7 @@ argColorList = list()
 functions = list()
 for icLines in all_lines:
     icLines = icLines[::-1]
-    (inSets, outSets) = final_liveness(icLines)
+    (inSets, outSets, func_name) = final_liveness(icLines)
     inSets = inSets[::-1]
     outSets = outSets[::-1]
     intGraph = buildInterferenceGraph(inSets, outSets)
@@ -50,11 +50,9 @@ for icLines in all_lines:
     coloredMapList.append(coloredList)
     spilledMapList.append(spilledList)
     argColorList.append(argColorMap)
-    #functions.append(func_name)
+    functions.append(func_name)
     coloredList = spilledList = list()
     argColorMap = dict()
-
-    
 '''
 idx = 0
 for coloredList in coloredMapList:
@@ -67,8 +65,11 @@ for spilledList in spilledMapList:
 print "Args color list: "
 for argsColor in argColorList:
     print argsColor
-
+print "Functions:"
+for func_name in functions:
+    print func_name
 '''
+
 '''        
 asmLines = genMIPSCode(gencode_blocks, coloredList, spilledList)
 fileName = sys.argv[1]

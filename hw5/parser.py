@@ -398,6 +398,7 @@ classdict = {}
 currentclass = None
 classobj = {}
 func = []
+field = 0
 
 ##############################################################################################
 
@@ -421,7 +422,7 @@ def wellformed(node,decl,defined,classobj):
     if node.type == "NewObject":
         id = node.children[1].leaf
         if id not in classdict.keys():
-            print "Wellformed ERROR: CLASS\"" + id + "\" NOT A valid CLASS"
+            print "Wellformed ERROR: CLASS\"" + id + "\" NOT A valid CLASS [NOT DECLARED]"
             sys.exit(-1)
         return
 
@@ -541,6 +542,8 @@ def wellformed(node,decl,defined,classobj):
 
             return
 
+
+
     elif(node.type == "VarDecl"):
         Type = node.children[0]
         if len(Type.children) != 0:
@@ -604,6 +607,7 @@ def wellformed(node,decl,defined,classobj):
             iterable_list = primary.children[1:0]
             for child in iterable_list:
                 wellformed(child,decl,defined,classobj)
+            print primary.type
             primary = primary.children[0]
         id = primary.leaf
         if id not in classobj.keys() and id not in decl:
@@ -723,7 +727,7 @@ def checkreturn(node,found):
         #print defined[:]
         return
                 
-    elif(node.type == "Stmt" and node.children[0].leaf == "return"):
+    elif(node.type == "RetStmt"):
         #print "Here"
         found[0] = 1
         return
@@ -829,8 +833,13 @@ def declareonce(node,decl,parent):
 
 ##############################################################################################
 
-def welltyped(node,vars):
+def welltyped(node,vars,classobj):
+    global field
 
+    
+    if node.type == "ClassDecl":
+        return
+    
     if node.type == "IntConst":
         node.check = "int"
         return
@@ -842,13 +851,40 @@ def welltyped(node,vars):
     elif node.type == "VarDecl":
         if node.children[0].leaf == "int" or node.children[0].leaf == "bool":
             type = node.children[0].leaf
-            varnode = node.children[1]
-            while (len(varnode.children) != 1):
+            varlist = node.children[1]
+            while (len(varlist.children) != 1):
+                varnode = varlist.children[0]
                 vars[varnode.children[0].leaf] = type
-                varnode = varnode.children[2]
+                varlist = varlist.children[2]
+            varnode = varlist.children[0]
             vars[varnode.children[0].leaf] = type
             node.check = type
+        
+        Type = node.children[0]
+        if len(Type.children) != 0:
+            if Type.children[0].type == "ID":
+                classid = Type.children[0].leaf
+                if classid not in classdict.keys():
+                    print "Wellformed ERROR: CLASS NAME \"" + classid + "\" NOT DECLARED before use"
+                    sys.exit(-1)
+                currentclass = classid
+                iterable_list = node.children[1:]
+                for child in iterable_list:
+                    welltyped(vars,classdict,classobj)
+                currentclass = None
         return
+
+
+    elif node.type == "var":
+        varid = node.children[0].leaf
+        if currentclass != None:
+            if varid not in classobj.keys():
+                classobj[varid] = currentclass
+            else:
+                print "DeclareOnce ERROR: Class Variable \"" + varid + "\" Declares Twice in same scope"
+                sys.exit(-1)
+        return
+
 
     elif node.type == "Unop":
         welltyped(node.children[0],vars)
@@ -929,8 +965,10 @@ def welltyped(node,vars):
 
     elif node.type == "if":
         iterable_list = node.children[:]
+        temp_classobj = classobj.copy()
+        temp_vars = vars.copy()
         for child in iterable_list:
-            welltyped(child,vars)
+            welltyped(child,temp_vars,temp_classobj)
         if node.children[0].check != "bool":
             node.check = "error"
         for child in iterable_list:
@@ -940,8 +978,10 @@ def welltyped(node,vars):
 
     elif node.type == "while":
         iterable_list = node.children[:]
+        temp_classobj = classobj.copy()
+        temp_vars = vars.copy()
         for child in iterable_list:
-            welltyped(child,vars)
+            welltyped(child,temp_vars,temp_classobj)
         if node.children[0].check != "bool":
             node.check = "error"
         for child in iterable_list:
@@ -951,8 +991,10 @@ def welltyped(node,vars):
 
     elif node.type == "do":
         iterable_list = node.children[:]
+        temp_classobj = classobj.copy()
+        temp_vars = vars.copy()
         for child in iterable_list:
-            welltyped(child,vars)
+            welltyped(child,temp_vars,temp_classobj)
         if node.children[1].check != "bool":
             node.check = "error"
         for child in iterable_list:
@@ -960,6 +1002,108 @@ def welltyped(node,vars):
                 node.check = "error"
         return
 
+    elif(node.type == "for"):
+        if(node.children[0].type == "SEOpt"):
+            wellformed(node.children[0],decl,defined,classobj)
+            iterable_list = node.children[1:]
+        temp_vars = vars.copy()
+        temp_classobj = classobj.copy()
+        for child in iterable_list:
+            wellformed(child,temp_decl,temp_defined,temp_classobj)
+
+        if node.children[2].check != "bool":
+            node.check = "error"
+
+        iterable_list = node.children[:]
+        for child in iterable_list:
+            if child.check == "error":
+                node.check = "error"
+        return
+
+
+    elif node.type == "Lhs":
+        welltyped(node.children[0],vars)
+        node.check = node.children[0].check
+        return
+
+    elif node.type == "AE":
+        welltyped(node.children[0],vars)
+        node.check = node.children[0].check
+        return
+
+    elif node.type == "Primary":
+        welltyped(node.children[0],vars)
+        node.check = node.children[0].check
+        return
+
+
+
+
+
+
+    elif node.type == "FieldAccess":
+        if len(node.children) > 1:
+            welltyped(node.children[2],vars)
+            field = 1
+            welltyped(node.children[0],vars)
+            if node.children[0].check != "error":
+                node.check = node.children[2].check
+            field = 0
+        else:
+            welltyped(node.children[0],vars)
+            node.check = node.children[0].check
+        return
+
+
+
+    elif node.type == "ArrayAccess":
+        x = 0
+        if field == 1:
+            field = 0
+            x=1
+        welltyped(node.children[1],vars,classobj)
+        if node.children[1].check != "int":
+            node.check = "error"
+            return
+        if x == 1:
+            field = 1
+        welltyped(node.children[0],vars,classobj)
+        node.check = node.children[0].check
+        return
+
+
+    elif node.type == "NewObject":
+        id = node.children[1].leaf
+        if id not in classdict.keys():
+            node.check = "error"
+        else:
+            node.check = node.children[1].leaf
+        return
+
+
+    elif node.type == "ID":
+        id = node.leaf
+        if field == 1:
+            if id in classobj.keys():
+                node.check = classobj[id]
+            else:
+                node.check = "error"
+            return
+        else:
+            if id in vars.keys():
+                node.check = vars[id]
+            else:
+                node.check = "error"
+            return
+
+
+
+    #temp_parent = node.type
+    for child in iterable_list:
+        #print child.type
+        welltyped(child,vars,classobj)
+
+    return
 
 
 ################################################################################
@@ -1017,50 +1161,86 @@ def find(node):
 if __name__ == "__main__":
     s = '''
         int a,b,c,d;
-        
-        
         class myclass
         {
             int x,y,z;
+        
         }
         
+        int temp(int y, int z)
+        {
+            //bool b;
+            int x;
+            int e;
+            x=2;
+            e = 1;
+        {
+            int b;
+        }
+            while (x < 2 && e != 0) do
+        {
+            x--;
+            e = 5 % 2;
+            y = y + -e;
+        }
+        
+        do
+        {
+            while (e < 10) do
+        {
+            e = e + 4 * 3;
+            }
+            x = x + 1;
+        } while(x > 2);
+        
+            return 3;
+        }
         
         void main()
         {
             int a,b;
             myclass obj;
-            a=1;
+            int arr[];
+            a = 1;
             obj = new myclass ();
             obj.x = a;
             obj.y = 1;
-            //obj.l =1;
-            //objj.x = 1;
+            arr = new int [10];
         {
             int fg;
-        
-        
-        
         }
-            d=1;
-            c=1;
-            b=c*d;
+            d = 1;
+            c = 1;
+            b = ++c * d-- + 5;
+        //b = c * d - 5;
+        //arr[0] = 5;
+        //b = c++;
+        //b = arr[++c]++;
             a = temp(3,4);
-            return;
-           
-        }
-        
-        int temp( int b)
+        if (a > b) then
         {
-            
-            //bool b;
-            //x=2;
-            {
-            int b;
-            }
-           
-            return 3;
-        
+            a = 1;
+        if ( c < 0) then
+        {
+            c = 0;
+        }						
+            b = 5;
+            c = a + b;
         }
+        else
+        {
+            b = 4;
+            c = a - b;
+        }
+        
+        for (c = 0; c < 10; c++)
+        {
+            a = a + 4;
+        } 
+		
+        return;
+        }
+        
         
             '''
     result = parser.parse(s)
@@ -1081,4 +1261,4 @@ if __name__ == "__main__":
     
     wellformed(result,decl,defined,classobj)
     '''
-    welltyped(result,vars)'''
+    welltyped(result,vars,classobj)'''

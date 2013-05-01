@@ -238,6 +238,8 @@ def gencode(node):
     global classdict
     global classobjdict
 
+    #classdict["myclass"] = ["x", "y", "z", "arr[]"]
+
     blk1 = list()
     blk2 = list()
     blk3 = list()
@@ -514,10 +516,7 @@ def gencode(node):
                 else:
                     idx += 1
             offset = idx * 4
-            tStr = tVar + str(tID) + " = " + str(idNode.leaf) + " * " + str(offset) + "\n"
-            temp_blk.append(tStr)
-            tID += 1
-            tStr = tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
+            tStr = tVar + str(tID) + " = " + str1 + " + " + str(offset) + "\n"
             temp_blk.append(tStr)
             tStr = tVar + str(tID)
             tID += 1
