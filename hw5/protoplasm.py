@@ -16,7 +16,7 @@ except IOError:
     print "File " + sys.argv[1] + " not found!!"
     sys.exit(-1)
 
-#wellformed(astRoot, decl, defined, classobj)
+wellformed(astRoot, decl, defined, classobj)
 #print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
 function_lines = list()
@@ -37,7 +37,7 @@ argColorList = list()
 functions = list()
 for icLines in all_lines:
     icLines = icLines[::-1]
-    (inSets, outSets, func_name) = final_liveness(icLines)
+    (inSets, outSets) = final_liveness(icLines)
     inSets = inSets[::-1]
     outSets = outSets[::-1]
     intGraph = buildInterferenceGraph(inSets, outSets)
@@ -50,7 +50,7 @@ for icLines in all_lines:
     coloredMapList.append(coloredList)
     spilledMapList.append(spilledList)
     argColorList.append(argColorMap)
-    functions.append(func_name)
+    #functions.append(func_name)
     coloredList = spilledList = list()
     argColorMap = dict()
 
@@ -80,6 +80,7 @@ for line in asmLines:
 f1.close()
 print "Compilation succeeded and output written to " + str(targetFile)
 '''
+'''
 mipsLines = list()
 idx = 0
 for icLines in function_lines:
@@ -106,3 +107,4 @@ if data_section:
         scratchText = str()
         for var in spilledVars:
             scratchText += spilledVars[var] + ":\t .word 0\n"
+'''

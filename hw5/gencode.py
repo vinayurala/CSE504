@@ -25,6 +25,8 @@ atomic_op = str()
 post_op_list = list()
 scratch_stack = list()
 function_called = False
+classobjdict = dict()
+
 
 three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
 rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
@@ -37,6 +39,7 @@ def clear_stack():
     global tVar
     global tID
     global post_op_list
+    global classobjdict
 
     tStr = str()
     str1 = str2 = str()
@@ -98,6 +101,9 @@ def clear_stack():
             str2 = scratch_stack.pop(0)
             str3 = scratch_stack.pop()
             tStr = str3 + " " + str2 + " " + str1 + "\n"
+            if "new" in str1 and not "[" in str1:      # For classobjdict which is used to calculate member offset
+                (_, class_name, _) = str1.split()
+                classobjdict[str3] = class_name
         else:                                       # For Binop (eg. arr[c+d])
             str1 = scratch_stack.pop()
             str2 = scratch_stack.pop()
@@ -229,6 +235,8 @@ def gencode(node):
     global atomic_op
     global scratch_stack
     global function_called
+    global classdict
+    global classobjdict
 
     blk1 = list()
     blk2 = list()
@@ -431,7 +439,8 @@ def gencode(node):
             str2 = str(scratch_stack.pop())
         tStr = tVar + str(tID) + " = " + str2 + " * 4\n"
         tID += 1
-        tStr = tStr + tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
+        temp_blk.append(tStr)
+        tStr = tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
         temp_blk.append(tStr)
         tStr = tVar + str(tID)
         tID += 1
@@ -460,7 +469,7 @@ def gencode(node):
         
     elif node.type is "NewObject":
         idNode = node.children[1]
-        str1 = "new " + str(idNode.leaf) + "()"
+        str1 = "new " + str(idNode.leaf) + " ()"
         scratch_stack.append(str1)
 
     elif node.type is "NewArray":
@@ -494,9 +503,25 @@ def gencode(node):
         if len(node.children) > 1:
             gencode(node.children[0])
             str1 = scratch_stack.pop()
+            class_name = classobjdict[str1]
+            mem_list = classdict[class_name]
             idNode = node.children[2]
-            str1 = str1 + "." + str(idNode.leaf)
-            scratch_stack.append(str1)
+            #str1 = str1 + "." + str(idNode.leaf)
+            idx = 0
+            for mem in mem_list:
+                if mem == idNode.leaf:
+                    break
+                else:
+                    idx += 1
+            offset = idx * 4
+            tStr = tVar + str(tID) + " = " + str(idNode.leaf) + " * " + str(offset) + "\n"
+            temp_blk.append(tStr)
+            tID += 1
+            tStr = tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
+            temp_blk.append(tStr)
+            tStr = tVar + str(tID)
+            tID += 1
+            scratch_stack.append(tStr)
         else:
             gencode(node.children[0])
 
