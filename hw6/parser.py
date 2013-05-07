@@ -28,7 +28,7 @@ class Node:
             self.children = [ ]
         self.leaf = leaf
 
-"""
+
     def graph(node):
     edges = descend(node)
     g=pydot.graph_from_edges(edges)
@@ -46,7 +46,7 @@ class Node:
     edges.append(((node.type,node.leaf),(i.type,i.leaf)))
     edges = edges + descend(i)
     return edges
-    """
+
 ###########################################################################
 def p_pgm_decl(p):
     'Pgm : DeclSeq'             # For *
@@ -62,8 +62,8 @@ def p_declseq_null(p):
 
 def p_decl(p):
     '''Decl : VarDecl
-          | FunDecl
-          | ClassDecl'''
+            | FunDecl
+            | ClassDecl'''
     p[0] = Node("Decl", children = [p[1]])
 
 def p_vardecl(p):
@@ -99,7 +99,7 @@ def p_classdecl(p):
         p[0] = Node("ClassDecl", children = [p[2], p[3], p[4], p[5], p[6]])
 
 def p_extends(p):
-    ' Extends : EXTENDS ID'
+    'Extends : EXTENDS ID'
     p[2] = Node("ID", leaf = p[2])
     p[0] = Node("Extends", children = [p[2]])
 
@@ -114,6 +114,7 @@ def p_memberdeclseq_null(p):
     p[0] = Node("MemberDeclSeq")
 
 
+'''
 def p_vardeclseq(p):                                                # for Decl in classes
     'VarDeclSeq : VarDecl VarDeclSeq'
     p[0] = Node("VarDeclSeq", children = [p[1], p[2]])
@@ -121,6 +122,7 @@ def p_vardeclseq(p):                                                # for Decl i
 def p_vardeclseq_null(p):
     'VarDeclSeq : '
     p[0] = Node("VarDeclSeq")
+'''
 
 def p_type(p):
     '''Type : INT
@@ -220,7 +222,6 @@ def p_aeopt(p):
         p[0] = Node("AEOpt", children = [p[1]])
 
 
-
 def p_stmtseq(p):
     'StmtSeq : Stmt StmtSeq'
     p[0] = Node("StmtSeq",children = [p[1],p[2]])
@@ -262,18 +263,23 @@ def p_stmt_return(p):
 
 
 def p_se(p):
-    'SE : Lhs EQ AE'
+    '''SE : Assign
+          | MethodCall'''
+    p[0] = Node("SE", children = [p[1]])
+
+def p_assign(p):
+    'Assign : Lhs EQ AE'
     p[2] = Node("EQ", leaf  = p[2])
     p[0] = Node("SEEq", children = [p[1], p[2], p[3]])
 
 def p_se_post(p):
-    '''SE : Lhs INC
+    '''Assign : Lhs INC
         | Lhs DEC'''
     p[2] = Node("POST", leaf = p[2])
     p[0] = Node("SEPost", children = [p[1], p[2]])
 
 def p_se_pre(p):
-    '''SE : INC Lhs
+    '''Assign : INC Lhs
         | DEC Lhs '''
     p[1] = Node("Pre", leaf = p[1])
     p[0] = Node("SEPre", children = [p[1], p[2]])
@@ -332,21 +338,19 @@ def p_primary_misc(p):
 def p_primary_const(p):
     '''Primary : TRUE
         | FALSE
-        | NUMBER '''
+        | NUMBER 
+        | THIS
+        | SUPER'''
     if ("true" in p):
         p[0] = Node("bool", leaf = p[1])    
     elif ("false" in p):
         p[0] = Node("bool", leaf = p[1])
+    elif ("this" in p):
+        p[0] = Node("this", leaf = p[1])
+    elif ("super" in p):
+        p[0] = Node("super", leaf = p[1])
     else:
         p[0] = Node("IntConst", leaf = p[1])
-
-def p_primary_super(p):
-    'Primary : SUPER'
-    p[0] = Node("Super", leaf = p[1])
-
-def p_primary_this(p):
-    'Primary : THIS'
-    p[0] = Node("This", leaf = p[1])
 
 def p_arrayaccess(p):                           ##### Need Square Brackets?
     'ArrayAccess : Primary LSQR AE RSQR'
@@ -363,17 +367,16 @@ def p_FieldAccess(p):
         p[2] = Node("DOT", leaf = p[2])
         p[0] = Node("FieldAccess", children = [p[1], p[2], p[3]])
 
-def p_functioncall(p):
-    '''FunctionCall : ID LPAREN Args RPAREN
-                    | ID LPAREN RPAREN'''
-    p[1] = Node("ID", leaf = p[1])
+def p_methodcall(p):
+    '''MethodCall : FieldAccess LPAREN Args RPAREN
+                  | FieldAccess LPAREN RPAREN'''
     p[2] = Node("LPAREN", leaf = p[2])
     if len(p) == 4:
         p[3] = Node("RPAREN", leaf = p[3])
-        p[0] = Node("FunctionCall", children = [p[1], p[2], p[3]])
+        p[0] = Node("MethodCall", children = [p[1], p[2], p[3]])
     else:
         p[4] = Node("RPAREN", leaf = p[4])
-        p[0] = Node("FunctionCall", children = [p[1], p[2], p[3], p[4]])
+        p[0] = Node("MethodCall", children = [p[1], p[2], p[3], p[4]])
 
 def p_args(p):
     '''Args : AE COMMA Args
@@ -396,6 +399,8 @@ def p_newarray(p):
     'NewArray : NEW Type DimExpr DimStar'                    # For DimSeq  #???????????????????????
     p[1] = Node("NEW", leaf = p[1])
     p[0] = Node("NewArray", children = [p[1], p[2], p[3], p[4]])
+
+
 
 def p_dimexpr(p):
     'DimExpr : LSQR AE RSQR'
@@ -1284,27 +1289,74 @@ def find(node):
 if __name__ == "__main__":
     s = '''
         
-        return 
+        int a,b,c,d;
+        
+        class myclass extends x
+        {
+        int x,y,z;
+        int temp(int l)
+        {
+            super.x=l;
+            return c;
+        }
+        }
+        void main()
+        {
+        int a,b;
+        myclass obj;
+        int arr[];
+        a = 1;
+        obj = new myclass ();
+        obj.x = a;
+        obj.y = 1;
+        arr = new int [10];
+        arr[1]=0;
+        
+        {
+        int fg;
+        int ef ;
+        
+        
+        }
+        d=1;
+        c=1;
+        
+        b=c*d;
+        a = temp(3,4);
+        return;
+        
+        }
+        
+        int temp( int b, int x, int y)
+        {
+        {
+        int b;
+        }
+        
+        return 3;
+        
+        }
             '''
     result = yacc.parse(s)
     print 'Done with parsing'
     
     
-    
+    """
     ismain(result,done)
     if done[0] == 0:
         print "Main function ERROR: Main Function Not WellFormed"
         sys.exit(-1)
     
     isreturn(result)
-    '''
+    
     find(result)
     #print func[:]
     #print classdict
     declareonce(result,decl,parent)
     
     wellformed(result,decl,defined,classobj)
+    """
     #print vars
-    
+    '''
     welltyped(result,vars,classobj) '''
     

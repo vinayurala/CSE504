@@ -27,6 +27,7 @@ scratch_stack = list()
 function_called = False
 classobjdict = dict()
 class_size = dict()
+seen_classfuncs = dict()
 
 
 three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
@@ -250,6 +251,8 @@ def gencode(node):
     blk3 = list()
     blk4 = list()
 
+    print node.type
+
     if node.type is "if":
         end_if_lid = recent_if_lid
         gencode(node.children[0])
@@ -326,7 +329,7 @@ def gencode(node):
         label_str = "label end_for_lid" + str(end_for_lid - 1) + " :\n"
         end_for_lid -= 1
         temp_blk.append(label_str)
-                
+
     elif node.type is "FunDecl":
         idNode = node.children[1]
         str1 = idNode.leaf 
@@ -384,6 +387,13 @@ def gencode(node):
         child = node.children[0]
         if child.type is "FunDecl":
             gencode(child)
+        elif child.type is "ClassDecl":
+            gencode(child)
+
+    elif node.type is "MemberDecl":
+        child = node.children[0]
+        if child.type is "FunDecl":
+            gencode(child);
 
     elif node.type is "VarDecl":
         return
@@ -392,7 +402,10 @@ def gencode(node):
         return
 
     elif node.type is "ClassDecl":
-        return
+        if len(node.children) == 6:
+            gencode(node.children[2])
+        else:
+            gencode(node.children[3])
         
     elif node.type is "VarList":
         return
@@ -457,7 +470,7 @@ def gencode(node):
     elif node.type is "PrimaryAccess":
         gencode(node.children[0])
 
-    elif node.type is "FunctionCall":
+    elif node.type is "MethodCall":
         str1 = str()
         function_called = True
         idNode = node.children[0]
@@ -534,7 +547,19 @@ def gencode(node):
     elif node.type is "IntConst":
         scratch_stack.append(str(node.leaf))
 
+    elif node.type is "bool":
+        scratch_stack.append(str(node.leaf))
+
+    elif node.type is "super":
+        scratch_stack.append(str(node.leaf))
+        
+    elif node.type is "this":
+        scratch_stack.append(str(node.leaf))
+
     elif node.type is "AE":
+        gencode(node.children[0])
+
+    elif node.type is "SE":
         gencode(node.children[0])
 
     elif node.type is "Primary":
@@ -630,8 +655,8 @@ def gencode(node):
 
 def final_codegen(root):
     gencode(root)
-    #for line in temp_blk:
-    #    print line
+    for line in temp_blk:
+        print line
     return temp_blk
 
 if __name__ == "__main__":
