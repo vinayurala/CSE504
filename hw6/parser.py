@@ -28,7 +28,7 @@ class Node:
             self.children = [ ]
         self.leaf = leaf
 
-
+"""
     def graph(node):
     edges = descend(node)
     g=pydot.graph_from_edges(edges)
@@ -46,8 +46,9 @@ class Node:
     edges.append(((node.type,node.leaf),(i.type,i.leaf)))
     edges = edges + descend(i)
     return edges
-
+"""
 ###########################################################################
+
 def p_pgm_decl(p):
     'Pgm : DeclSeq'             # For *
     p[0] = Node("Pgm", children = [p[1]])
@@ -104,10 +105,13 @@ def p_extends(p):
     p[0] = Node("Extends", children = [p[2]])
 
 
-def p_memberdeclseq(p):                                                # for Decl in classes
-    '''MemberDeclSeq : VarDecl MemberDeclSeq
-                   | FunDecl MemberDeclSeq'''
-    p[0] = Node("MemberDeclSeq", children = [p[1], p[2]])
+def p_memberdeclseq_var(p):                                                # for Decl in classes
+    'MemberDeclSeq : VarDecl MemberDeclSeq'
+    p[0] = Node("MemberDeclSeq_Var", children = [p[1], p[2]])
+
+def p_memberdeclseq_func(p):
+     'MemberDeclSeq : FunDecl MemberDeclSeq'
+     p[0] = Node("MemberDeclSeq_Func", children = [p[1], p[2]])
 
 def p_memberdeclseq_null(p):
     'MemberDeclSeq : '
@@ -444,6 +448,8 @@ def wellformed(node,decl,defined,classobj):
     iterable_list = node.children[:]
     
     
+    print node.type
+
     if node.type == "FunctionCall":
         id = node.children[0].leaf
         if id not in func:

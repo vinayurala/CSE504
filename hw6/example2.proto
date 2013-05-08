@@ -1,0 +1,43 @@
+int a,b,c,d;
+        
+class myclass extends x
+{
+   int x,y,z;
+   int temp(int l)
+   {
+     super.x=l;
+     return super.x;
+   }
+}
+
+void main()
+{
+   int a,b;
+   myclass obj;
+   int arr[];
+   a = 1;
+   obj = new myclass ();
+   obj.x = a;
+   obj.y = 1;
+   arr = new int [10];
+   arr[1]=0;
+   {
+      int fg;
+      int ef ;
+   }
+   d=1;
+   c=1;
+        
+   b=c*d;
+   a = temp(3,4);
+   return;
+ }
+        
+int temp( int b, int x, int y)
+{
+  {
+    int b;
+  }
+        
+  return 3;
+}

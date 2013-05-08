@@ -27,8 +27,9 @@ scratch_stack = list()
 function_called = False
 classobjdict = dict()
 class_size = dict()
-seen_classfuncs = dict()
-
+seen_class = str()
+brace_count = 0
+function_class_aliases = dict()               # {(className, funcName) : className_funcName}
 
 three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
 rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
@@ -243,8 +244,11 @@ def gencode(node):
     global classdict
     global classobjdict
     global class_size
+    global seen_class
+    global brace_count
 
-    #classdict["myclass"] = ["x", "y", "z", "arr[]"]
+    classdict["c1"] = ["a", "b"]
+    classdict["c2"] = ["a", "b", "c"]
 
     blk1 = list()
     blk2 = list()
@@ -333,12 +337,26 @@ def gencode(node):
     elif node.type is "FunDecl":
         idNode = node.children[1]
         str1 = idNode.leaf 
-        if len(node.children) != 7:
-            str1 += " ():"
-        else:
-            str1 += " ("
+        if seen_class:
+            str1 = seen_class + "_" + idNode.leaf
+            function_class_aliases[(seen_class, idNode.leaf)] = str1
 
-        if len(node.children) == 7:
+        if len(node.children) != 7:
+            if seen_class:
+                str1 += " (this):"
+            else:
+                str1 += " ():"
+                
+            temp_blk.append(str1)
+            temp_blk.append("{")
+            gencode(node.children[5])
+
+        else:
+            if seen_class:
+                str1 += "(this, "
+            else:
+                str1 += " ("
+
             gencode(node.children[4])
             scratch_stack = scratch_stack[::-1]
             while scratch_stack:
@@ -348,10 +366,6 @@ def gencode(node):
             temp_blk.append(str1)
             temp_blk.append("{")
             gencode(node.children[6])
-        else:
-            temp_blk.append(str1)
-            temp_blk.append("{")
-            gencode(node.children[5])
 
         temp_blk.append("}")
 
@@ -374,7 +388,6 @@ def gencode(node):
         else:
             temp_blk.append("ret")
             
-
     elif node.type is "Pgm":
         gencode(node.children[0])
 
@@ -390,10 +403,10 @@ def gencode(node):
         elif child.type is "ClassDecl":
             gencode(child)
 
-    elif node.type is "MemberDecl":
+    elif node.type is "MemberDeclSeq_Func":
         child = node.children[0]
-        if child.type is "FunDecl":
-            gencode(child);
+        #print child.type
+        gencode(child)
 
     elif node.type is "VarDecl":
         return
@@ -402,10 +415,17 @@ def gencode(node):
         return
 
     elif node.type is "ClassDecl":
-        if len(node.children) == 6:
+        class_id = node.children[0]
+        seen_class = class_id.leaf
+        # print node.children[1].type
+        gencode(node.children[1])
+        # print seen_class
+        if len(node.children) == 4:
             gencode(node.children[2])
+            gencode(node.children[3])
         else:
             gencode(node.children[3])
+            gencode(node.children[4])
         
     elif node.type is "VarList":
         return
@@ -470,11 +490,21 @@ def gencode(node):
     elif node.type is "PrimaryAccess":
         gencode(node.children[0])
 
-    elif node.type is "MethodCall":
+    elif node.type is "MethodCall":                         # TODO: obj[i].some_func
         str1 = str()
         function_called = True
-        idNode = node.children[0]
-        str1 = "call_" + str(idNode.leaf)
+        gencode(node.children[0])
+        if "." in scratch_stack:
+            str2 = scratch_stack.pop()                      # function name
+            scratch_stack.pop()
+            str3 = scratch_stack.pop()
+            str4 = classobjdict[str2]                       # class name
+            str5 = function_class_aliases[(str3, str2)]     # function alias (className_funcName)
+            str1 = "call_" + str5
+            scratch_stack = list()
+        elif len(scratch_stack) == 1:
+            idNode = scratch_stack.pop()
+            str1 = "call_" + str(idNode)
         scratch_stack.append(str1)
         scratch_stack.append("(")
         if len(node.children) == 4:
@@ -618,7 +648,14 @@ def gencode(node):
         temp_blk.append(str1)
 
     elif node.type is "RCURLY":
-        temp_blk.append("}\n")
+        # print brace_count
+        if brace_count > 0:
+            brace_count -= 1
+            temp_blk.append("}\n")
+
+        else:
+            seen_class = str()
+            brace_count = 0
 
     elif node.type is "SEMI":
         clear_stack()
@@ -632,8 +669,12 @@ def gencode(node):
         if function_called:
             clear_stack()
             function_called = False
+            temp_blk.append("{")
 
-        temp_blk.append("{")
+        elif seen_class:
+            brace_count += 1
+
+        #print brace_count
 
     elif node.type is "SEEq":
         eqNode = node.children[1]
@@ -651,9 +692,11 @@ def gencode(node):
         scratch_stack.append(preNode.leaf)
         gencode(node.children[1])
     
+    #print temp_blk
     return
 
 def final_codegen(root):
+    print "In gencode"
     gencode(root)
     for line in temp_blk:
         print line

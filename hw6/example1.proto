@@ -1,0 +1,41 @@
+int x1, y1;
+class c1
+{
+        int a, b;
+        int func1 (int a, int b)
+        {
+                int c, d;
+                c = 1;
+                d = c + a * b;
+                return d;
+        }
+}
+
+class c2 extends c1
+{
+        int func1 (int a, int b, int c)
+        {
+                int e;
+                e = a * b - c;
+                return e;
+        }       
+}
+
+void main()
+{
+        c1 c1obj;
+        c2 c2obj;
+        int a, b ,c, d;
+
+        c1obj = new c1();
+        c2obj = new c2();
+
+        a = 1;
+        b = 2;
+        
+        c = c1obj.func1(a, b);
+        d = c2obj.func(a, b, c);
+        print (c);
+        print (d);
+        return;
+}
