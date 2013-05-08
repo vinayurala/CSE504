@@ -255,7 +255,7 @@ def gencode(node):
     blk3 = list()
     blk4 = list()
 
-    print node.type
+    #print node.type
 
     if node.type is "if":
         end_if_lid = recent_if_lid
@@ -696,7 +696,7 @@ def gencode(node):
     return
 
 def final_codegen(root):
-    print "In gencode"
+    #print "In gencode"
     gencode(root)
     for line in temp_blk:
         print line
