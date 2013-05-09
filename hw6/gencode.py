@@ -32,6 +32,7 @@ brace_count = 0
 function_class_aliases = dict()               # {(className, funcName) : className_funcName}
 array_obj = False
 new_obj = False
+array_obj_name = str()
 
 three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
 rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
@@ -248,6 +249,9 @@ def gencode(node):
     global class_size
     global seen_class
     global brace_count
+    global new_obj
+    global array_obj
+    global array_obj_name
 
     classdict["c1"] = ["a", "b"]
     classdict["c2"] = ["a", "b", "c"]
@@ -481,9 +485,10 @@ def gencode(node):
         else:
             str2 = str(scratch_stack.pop())
 
-        if str2 in classobjdict.keys():
-            tot_size = " 4 * " + class_size[str2]
-            tStr =  tVar + str(tID) + " = " + str2 + tot_size + "\n"
+        if str1 in classobjdict.keys():
+            tot_size = " 4 * " + str(class_size[classobjdict[str1]])
+            tStr =  tVar + str(tID) + " = " + str1 + " + " + tot_size + "\n"
+            array_obj_name = str1
         else:
             tStr = tVar + str(tID) + " = " + str2 + " * 4\n"
         tID += 1
@@ -505,7 +510,10 @@ def gencode(node):
         idNode = scratch_stack.pop()
         if idNode in function_class_aliases.values():
             str1 = "call_" + idNode
-        
+            if array_obj_name:
+                temp_blk.pop()                              # Last 2 statements to calculate offset are not needed
+                temp_blk.pop()
+
         else:
             str1 = "call_" + str(idNode)
 
@@ -526,7 +534,9 @@ def gencode(node):
         str1 = "new " + str(idNode.leaf) + " ()"
         scratch_stack.append(str1)
         mem_list = classdict[idNode.leaf]
-        class_size[idNode] = len(mem_list) * 4
+        class_size[idNode.leaf] = len(mem_list) * 4
+        new_obj = True
+            
 
     elif node.type is "NewArray":
         typeNode = node.children[1]
@@ -536,7 +546,6 @@ def gencode(node):
             array_obj = True
         else:    
             str1 = "new " + str(typeNode.leaf)
-            new_obj = True
 
         init_len = len(scratch_stack)
         gencode(node.children[2])
@@ -566,16 +575,20 @@ def gencode(node):
         if len(node.children) > 1:
             gencode(node.children[0])
             str1 = scratch_stack.pop()
-            class_name = classobjdict[str1]
+
+            if array_obj_name:                                              # Field access for an object in an object array
+                class_name = classobjdict[array_obj_name]
+            else:
+                class_name = classobjdict[str1]
             idNode = node.children[2]
             function_alias = (class_name, idNode.leaf)
-
+            
             if function_alias in function_class_aliases.keys():                 # if member is a function
                 scratch_stack.append(function_class_aliases[function_alias])
                 return 
 
             mem_list = classdict[class_name]
-            #str1 = str1 + "." + str(idNode.leaf)
+            idNode = node.children[2]
             idx = 0
             for mem in mem_list:
                 if mem == idNode.leaf:
@@ -678,6 +691,7 @@ def gencode(node):
         clear_stack()
         array_obj = False
         new_obj = False
+        array_obj_name = str()
         if scratch_stack:
             scratch_stack.pop()
             

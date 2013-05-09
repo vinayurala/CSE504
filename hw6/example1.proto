@@ -32,13 +32,13 @@ void main()
         c1obj[1] = new c1();
         c2obj = new c2();
 
-        a = 1;
-        b = 2;
+        // a = 1;
+        // b = 2;
         
         c1obj[1].a = 3;
     
         c = c1obj[1].func1(a, b);
-        d = super.func1(a, b, c);
+        d = c2obj.func1(a, b, c);
         print (c);
         print (d);
         return;
