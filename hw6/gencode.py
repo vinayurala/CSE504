@@ -30,6 +30,8 @@ class_size = dict()
 seen_class = str()
 brace_count = 0
 function_class_aliases = dict()               # {(className, funcName) : className_funcName}
+array_obj = False
+new_obj = False
 
 three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
 rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
@@ -98,13 +100,13 @@ def clear_stack():
             scratch_stack.append(tStr)
 
 
-    elif len(scratch_stack) == 3:                      # Assignment; need to take care of cascaded assignments too
+    elif len(scratch_stack) == 3:                      
         if "=" in scratch_stack:
             str1 = scratch_stack.pop()
             str2 = scratch_stack.pop(0)
             str3 = scratch_stack.pop()
             tStr = str3 + " " + str2 + " " + str1 + "\n"
-            if "new" in str1 and not "[" in str1:      # For classobjdict which is used to calculate member offset
+            if new_obj or array_obj:      # For classobjdict which is used to calculate member offset
                 (_, class_name, _) = str1.split()
                 classobjdict[str3] = class_name
         else:                                       # For Binop (eg. arr[c+d])
@@ -255,7 +257,7 @@ def gencode(node):
     blk3 = list()
     blk4 = list()
 
-    #print node.type
+    # print node.type
 
     if node.type is "if":
         end_if_lid = recent_if_lid
@@ -408,6 +410,9 @@ def gencode(node):
         #print child.type
         gencode(child)
 
+    elif node.type is "MemberDeclSeq_Var":
+        gencode(node.children[1])
+
     elif node.type is "VarDecl":
         return
 
@@ -417,9 +422,7 @@ def gencode(node):
     elif node.type is "ClassDecl":
         class_id = node.children[0]
         seen_class = class_id.leaf
-        # print node.children[1].type
         gencode(node.children[1])
-        # print seen_class
         if len(node.children) == 4:
             gencode(node.children[2])
             gencode(node.children[3])
@@ -477,7 +480,12 @@ def gencode(node):
                 str2 = tVar + str(tID - 1)
         else:
             str2 = str(scratch_stack.pop())
-        tStr = tVar + str(tID) + " = " + str2 + " * 4\n"
+
+        if str2 in classobjdict.keys():
+            tot_size = " 4 * " + class_size[str2]
+            tStr =  tVar + str(tID) + " = " + str2 + tot_size + "\n"
+        else:
+            tStr = tVar + str(tID) + " = " + str2 + " * 4\n"
         tID += 1
         temp_blk.append(tStr)
         tStr = tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
@@ -494,17 +502,13 @@ def gencode(node):
         str1 = str()
         function_called = True
         gencode(node.children[0])
-        if "." in scratch_stack:
-            str2 = scratch_stack.pop()                      # function name
-            scratch_stack.pop()
-            str3 = scratch_stack.pop()
-            str4 = classobjdict[str2]                       # class name
-            str5 = function_class_aliases[(str3, str2)]     # function alias (className_funcName)
-            str1 = "call_" + str5
-            scratch_stack = list()
-        elif len(scratch_stack) == 1:
-            idNode = scratch_stack.pop()
+        idNode = scratch_stack.pop()
+        if idNode in function_class_aliases.values():
+            str1 = "call_" + idNode
+        
+        else:
             str1 = "call_" + str(idNode)
+
         scratch_stack.append(str1)
         scratch_stack.append("(")
         if len(node.children) == 4:
@@ -526,7 +530,14 @@ def gencode(node):
 
     elif node.type is "NewArray":
         typeNode = node.children[1]
-        str1 = "new " + str(typeNode.leaf)
+        if typeNode.leaf is None and len(typeNode.children) == 1:
+            n1 = typeNode.children[0]
+            str1 = "new " + str(n1.leaf) + " "
+            array_obj = True
+        else:    
+            str1 = "new " + str(typeNode.leaf)
+            new_obj = True
+
         init_len = len(scratch_stack)
         gencode(node.children[2])
         curr_len = len(scratch_stack)
@@ -551,13 +562,19 @@ def gencode(node):
     elif node.type is "DimExpr":
         gencode(node.children[1])
 
-    elif node.type is "FieldAccess":
+    elif node.type is "FieldAccess":                                          # fix super.something access
         if len(node.children) > 1:
             gencode(node.children[0])
             str1 = scratch_stack.pop()
             class_name = classobjdict[str1]
-            mem_list = classdict[class_name]
             idNode = node.children[2]
+            function_alias = (class_name, idNode.leaf)
+
+            if function_alias in function_class_aliases.keys():                 # if member is a function
+                scratch_stack.append(function_class_aliases[function_alias])
+                return 
+
+            mem_list = classdict[class_name]
             #str1 = str1 + "." + str(idNode.leaf)
             idx = 0
             for mem in mem_list:
@@ -659,6 +676,8 @@ def gencode(node):
 
     elif node.type is "SEMI":
         clear_stack()
+        array_obj = False
+        new_obj = False
         if scratch_stack:
             scratch_stack.pop()
             

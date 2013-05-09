@@ -23,18 +23,22 @@ class c2 extends c1
 
 void main()
 {
-        c1 c1obj;
+        c1 c1obj[];
         c2 c2obj;
         int a, b ,c, d;
 
-        c1obj = new c1();
+        c1obj = new c1[10];
+
+        c1obj[1] = new c1();
         c2obj = new c2();
 
         a = 1;
         b = 2;
         
-        c = c1obj.func1(a, b);
-        d = c2obj.func(a, b, c);
+        c1obj[1].a = 3;
+    
+        c = c1obj[1].func1(a, b);
+        d = super.func1(a, b, c);
         print (c);
         print (d);
         return;

@@ -22,7 +22,7 @@ line_str = "".join(lines)
 #astRoot = yacc.parse(line_str)
 astRoot = yacc.parse(line_str)
 #print 'Done with parsing'
-
+"""
 print "In wellformed"
 ismain(astRoot,done)
 if done[0] == 0:
@@ -42,7 +42,7 @@ declareonce(astRoot,decl,parent)
 
 wellformed(astRoot,decl,defined,classobj)
 welltyped(astRoot, vars, classobj)
-
+"""
 """
 #wellformed(astRoot, decl, defined, classobj)
 """

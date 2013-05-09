@@ -448,7 +448,7 @@ def wellformed(node,decl,defined,classobj):
     iterable_list = node.children[:]
     
     
-    print node.type
+    # print node.type
 
     if node.type == "FunctionCall":
         id = node.children[0].leaf
