@@ -5,8 +5,10 @@ class myclass extends x
    int x,y,z;
    int temp(int l)
    {
-     super.x=l;
-     return super.x;
+     //super.x=l;
+     //return super.x;
+     x = l;
+     return x;
    }
 }
 
@@ -29,7 +31,8 @@ void main()
    c=1;
         
    b=c*d;
-   a = temp(3,4);
+   //a = temp(3,4);
+   b = obj.temp(c++, ++b-2); 
    return;
  }
         

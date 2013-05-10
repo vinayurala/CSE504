@@ -38,6 +38,7 @@ three_ops = ["+", "-", "*", "/", "%", "[", "]", ".", "="]
 rel_ops = ["&&", "||", "<", ">", "<=", ">=", "==", "!="]
 two_ops = ["UMINUS", "NOT"]
 inc_dec = ["++", "--"]
+arith_ops = three_ops[0:5]
 
 def clear_stack():
     global scratch_stack
@@ -57,19 +58,70 @@ def clear_stack():
     scratch_stack = scratch_stack[::-1]
     #print scratch_stack
     
-    if "(" in scratch_stack and ")" in scratch_stack and "," in scratch_stack:   # Function Call
+    if "call_" in scratch_stack[-1]:                  # Function call
+        tList = list()
         if "=" in scratch_stack:
             str1 = scratch_stack.pop(0)               # =
             str2 = scratch_stack.pop(0)               # ret
             
         while scratch_stack:
-            tStr += scratch_stack.pop() + " "
+            str3 = scratch_stack.pop()
+            if str3 in arith_ops:
+                tList.pop(len(tList)-1)               # whitespace
+                tList.pop(len(tList)-2)               # whitespace
+                tStr = tVar + str(tID) + " = " + tList[-2] + " " + str3 + " " + tList[-1] + "\n"
+                tList.pop()
+                tList.pop()
+                temp_blk.append(tStr)
+                tStr = tVar + str(tID)
+                tID += 1
+                scratch_stack.append(tStr)
+
+            elif str3 in two_ops:
+                if str3 is "UMINUS":
+                    str3 = "neg"
+                else:
+                    str3 = "not"
+                tList.pop(len(tList) - 1)
+                tStr = tVar + str(tID) + " = " + str3 + " " + tList.pop()
+                temp_blk.append(tStr)
+                tStr = tVar + str(tID)
+                tID += 1
+                scratch_stack.append(tStr)
+
+            elif str3 == "++" or str3 == "--":
+                str4 = scratch_stack[-1]
+                if str4 in arith_ops or str4 in two_ops or str4 in [",", ".", "(", ")"]:   #post inc/dec
+                    tList.pop()
+                    str4 = tList.pop()                  # variable
+                    post_dec_str = tVar + str(tID) + " = " + str4 + " + 1\n"
+                    post_op_list.append(post_dec_str)
+                    tStr = tVar + str(tID)
+                    scratch_stack.append(tStr)
+                    tID += 1
+                else:                                                           #pre inc/dec
+                    str4 = scratch_stack.pop()
+                    tStr = tVar + str(tID) + " = " + str4 + " + 1\n"
+                    temp_blk.append(tStr)
+                    tStr = tVar + str(tID) 
+                    tID += 1
+                    scratch_stack.append(tStr)
+
+            else:                                       # Missing ++ and --; need to handle them too
+                tList.append(str3)
+                tList.append(" ")
+                
+        tStr = "".join(tList)
         
         if str2 and str1:
             tStr = str2 + " " + str1 + " " + tStr
             
         tStr += "\n"
         temp_blk.append(tStr)
+
+        while post_op_list:
+            temp_blk.append(post_op_list.pop())
+
         return
 
 
@@ -253,8 +305,22 @@ def gencode(node):
     global array_obj
     global array_obj_name
 
-    classdict["c1"] = ["a", "b"]
-    classdict["c2"] = ["a", "b", "c"]
+    new_dict_vals = list()
+    
+    #classdict["c1"] = ["int", "a", "int", "b"]
+    #classdict["c2"] = ["int", "a", "bool", "b", "int", "c"]
+
+    classdict["myclass"] = ["int", "x", "int", "y", "int", "z"]
+
+    dict_vals = classdict.values()                           # classdict values contain type info too
+    for val in dict_vals:
+        new_val = val[1::2]                                  # Pick only odd indices which has vars info
+        new_dict_vals.append(new_val)
+
+    idx = 0
+    for k in classdict.keys():
+        classdict[k] = new_dict_vals[idx]
+        idx += 1
 
     blk1 = list()
     blk2 = list()
