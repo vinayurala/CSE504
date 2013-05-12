@@ -304,23 +304,19 @@ def gencode(node):
     global new_obj
     global array_obj
     global array_obj_name
-
-    new_dict_vals = list()
+    global inherit
     
     #classdict["c1"] = ["int", "a", "int", "b"]
     #classdict["c2"] = ["int", "a", "bool", "b", "int", "c"]
+    
+    #classdict["A"] = ["int", "x"];
+    #classdict["B"] = ["int", "b", "int", "y"]
+    #classdict["C"] = ["int", "p"]
 
-    classdict["myclass"] = ["int", "x", "int", "y", "int", "z"]
+    # classdict["A"] = ["int", "x"]
 
-    dict_vals = classdict.values()                           # classdict values contain type info too
-    for val in dict_vals:
-        new_val = val[1::2]                                  # Pick only odd indices which has vars info
-        new_dict_vals.append(new_val)
+    #classdict["myclass"] = ["int", "x", "int", "y", "int", "z"]
 
-    idx = 0
-    for k in classdict.keys():
-        classdict[k] = new_dict_vals[idx]
-        idx += 1
 
     blk1 = list()
     blk2 = list()
@@ -479,6 +475,8 @@ def gencode(node):
         child = node.children[0]
         #print child.type
         gencode(child)
+        if node.children[1]:
+            gencode(node.children[1])
 
     elif node.type is "MemberDeclSeq_Var":
         gencode(node.children[1])
@@ -552,17 +550,21 @@ def gencode(node):
             str2 = str(scratch_stack.pop())
 
         if str1 in classobjdict.keys():
-            tot_size = " 4 * " + str(class_size[classobjdict[str1]])
-            tStr =  tVar + str(tID) + " = " + str1 + " + " + tot_size + "\n"
+            tot_size =  4 * class_size[classobjdict[str1]]
+            tot_size = int(str2) * tot_size
+            tStr =  tVar + str(tID) + " = " + str1 + " + " + str(tot_size) + "\n"
             array_obj_name = str1
+            temp_blk.append(tStr)
+            tStr = tVar + str(tID)
+            tID += 1
         else:
             tStr = tVar + str(tID) + " = " + str2 + " * 4\n"
-        tID += 1
-        temp_blk.append(tStr)
-        tStr = tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
-        temp_blk.append(tStr)
-        tStr = tVar + str(tID)
-        tID += 1
+            tID += 1
+            temp_blk.append(tStr)
+            tStr = tVar + str(tID) + " = " + str1 + " + " + tVar + str(tID - 1) + "\n"
+            temp_blk.append(tStr)
+            tStr = tVar + str(tID)
+            tID += 1
         #str1 = str1 + "[" + str2 + "]"
         scratch_stack.append(tStr)
 
@@ -578,7 +580,7 @@ def gencode(node):
             str1 = "call_" + idNode
             if array_obj_name:
                 temp_blk.pop()                              # Last 2 statements to calculate offset are not needed
-                temp_blk.pop()
+                # temp_blk.pop()
 
         else:
             str1 = "call_" + str(idNode)
@@ -596,10 +598,21 @@ def gencode(node):
             gencode(node.children[2])
         
     elif node.type is "NewObject":
+        ancestor_list = list()
+        mem_list = list()
         idNode = node.children[1]
         str1 = "new " + str(idNode.leaf) + " ()"
         scratch_stack.append(str1)
-        mem_list = classdict[idNode.leaf]
+        temp_class_name = idNode.leaf
+        while temp_class_name in inherit.keys():
+            ancestor_list.append(inherit[temp_class_name])
+            temp_class_name = inherit[temp_class_name]
+
+        if ancestor_list:
+            for classes in ancestor_list:
+                mem_list = mem_list + classdict[classes]
+
+        mem_list = mem_list + classdict[idNode.leaf]
         class_size[idNode.leaf] = len(mem_list) * 4
         new_obj = True
             
@@ -745,8 +758,8 @@ def gencode(node):
 
     elif node.type is "RCURLY":
         # print brace_count
+        brace_count -= 1
         if brace_count > 0:
-            brace_count -= 1
             temp_blk.append("}\n")
 
         else:
@@ -794,11 +807,47 @@ def gencode(node):
     #print temp_blk
     return
 
+def parse_tree(node):
+    if node:
+        print node.type
+        for child in node.children:
+            parse_tree(child)
+
+def strip_types():
+    new_dict_vals = list()
+
+    dict_vals = classdict.values()                           # classdict values contain type info too
+    for val in dict_vals:
+        new_val = val[1::2]                                  # Pick only odd indices which has vars info
+        new_dict_vals.append(new_val)
+
+    idx = 0
+    for k in classdict.keys():
+        classdict[k] = new_dict_vals[idx]
+        idx += 1
+
+    dict_vals = list()
+    ancestor_list = list()
+    for k in classdict.keys():
+        cname = k
+        inherited_mem = list()
+        while cname in inherit.keys():
+            ancestor_list.append(inherit[cname])
+            cname = inherit[cname]
+        
+        while ancestor_list:
+            inherited_mem = classdict[ancestor_list.pop()] + inherited_mem 
+    
+        classdict[k] = inherited_mem + classdict[k]
+
+
 def final_codegen(root):
-    #print "In gencode"
+    global classdict
+
+    strip_types()
     gencode(root)
-    for line in temp_blk:
-        print line
+    #for line in temp_blk:
+    #    print line
     return temp_blk
 
 if __name__ == "__main__":

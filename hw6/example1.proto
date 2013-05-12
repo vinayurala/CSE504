@@ -7,16 +7,22 @@ class c1
                 int c, d;
                 c = 1;
                 d = c + a * b;
+                print (c);
+                print (a);
+                print (b);
+                print (d);
                 return d;
         }
 }
 
 class c2 extends c1
 {
+        int e;
         int func1 (int a, int b, int c)
         {
                 int e;
                 e = a * b - c;
+                print (e);
                 return e;
         }       
 }
@@ -32,13 +38,16 @@ void main()
         c1obj[1] = new c1();
         c2obj = new c2();
 
-        // a = 1;
-        // b = 2;
+        a = 1;
+        b = 2;
         
         c1obj[1].a = 3;
     
         c = c1obj[1].func1(a, b);
         d = c2obj.func1(a, b, c);
+        c2obj.a = 1;
+        c2obj.e = 4;
+        print (c2obj.a);
         print (c);
         print (d);
         return;

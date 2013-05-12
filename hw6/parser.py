@@ -2,7 +2,7 @@
 #import pydot
 
 import ply.yacc as yacc
-
+from collections import *
 import sys
 
 # Get the token map from the lexer.  This is required.
@@ -46,7 +46,7 @@ class Node:
     edges.append(((node.type,node.leaf),(i.type,i.leaf)))
     edges = edges + descend(i)
     return edges
-"""
+    """
 ###########################################################################
 
 def p_pgm_decl(p):
@@ -63,8 +63,8 @@ def p_declseq_null(p):
 
 def p_decl(p):
     '''Decl : VarDecl
-            | FunDecl
-            | ClassDecl'''
+        | FunDecl
+        | ClassDecl'''
     p[0] = Node("Decl", children = [p[1]])
 
 def p_vardecl(p):
@@ -73,8 +73,8 @@ def p_vardecl(p):
     p[0] = Node("VarDecl", children = [p[1], p[2], p[3]])
 
 def p_fundecl(p):                                                   #Used for ?
-    '''FunDecl : Type ID DimStar LPAREN Formals RPAREN Stmt                     
-               | Type ID DimStar LPAREN RPAREN Stmt'''
+    '''FunDecl : Type ID DimStar LPAREN Formals RPAREN Stmt
+        | Type ID DimStar LPAREN RPAREN Stmt'''
     p[2] = Node("ID", leaf = p[2])
     p[4] = Node("LPAREN", leaf = p[4])
     if len(p) == 8:
@@ -87,7 +87,7 @@ def p_fundecl(p):                                                   #Used for ?
 
 def p_classdecl(p):
     '''ClassDecl : CLASS ID Extends LCURLY MemberDeclSeq RCURLY
-                 | CLASS ID LCURLY MemberDeclSeq RCURLY '''
+        | CLASS ID LCURLY MemberDeclSeq RCURLY '''
     if len(p) == 6:
         p[2] = Node("ID", leaf = p[2])
         p[3] = Node("LCURLY", leaf = p[3])
@@ -110,8 +110,8 @@ def p_memberdeclseq_var(p):                                                # for
     p[0] = Node("MemberDeclSeq_Var", children = [p[1], p[2]])
 
 def p_memberdeclseq_func(p):
-     'MemberDeclSeq : FunDecl MemberDeclSeq'
-     p[0] = Node("MemberDeclSeq_Func", children = [p[1], p[2]])
+    'MemberDeclSeq : FunDecl MemberDeclSeq'
+    p[0] = Node("MemberDeclSeq_Func", children = [p[1], p[2]])
 
 def p_memberdeclseq_null(p):
     'MemberDeclSeq : '
@@ -119,19 +119,19 @@ def p_memberdeclseq_null(p):
 
 
 '''
-def p_vardeclseq(p):                                                # for Decl in classes
+    def p_vardeclseq(p):                                                # for Decl in classes
     'VarDeclSeq : VarDecl VarDeclSeq'
     p[0] = Node("VarDeclSeq", children = [p[1], p[2]])
-
-def p_vardeclseq_null(p):
+    
+    def p_vardeclseq_null(p):
     'VarDeclSeq : '
     p[0] = Node("VarDeclSeq")
-'''
+    '''
 
 def p_type(p):
     '''Type : INT
-            | BOOL
-            | VOID'''
+        | BOOL
+        | VOID'''
     if len(p) == 2:
         p[0] = Node("Type", leaf = p[1])
 
@@ -146,7 +146,7 @@ def p_type_id(p):
 
 def p_varlist(p):
     '''VarList : Var COMMA VarList
-               | Var '''
+        | Var '''
     if len(p) == 2:
         p[0] = Node("VarList", children = [p[1]])
     else:
@@ -171,7 +171,7 @@ def p_dimstar(p):
 
 def p_formals(p):
     '''Formals : Type ID DimStar COMMA Formals
-               | Type ID DimStar'''
+        | Type ID DimStar'''
     p[2] = Node("ID", leaf = p[2])
     if len(p) == 4:
         p[0] = Node("Formals", children = [p[1], p[2], p[3]])
@@ -246,16 +246,16 @@ def p_block(p):
 
 def p_blockext(p):
     '''BlockExt : VarDecl BlockExt
-                | StmtSeq'''
+        | StmtSeq'''
     if len(p) == 2:
         p[0] = Node("BlockExt", children = [p[1]])
     else:
         p[0] = Node("BlockExt", children = [p[1], p[2]])
-    
+
 
 def p_stmt_return(p):
     '''Stmt : RETURN AE SCOLON
-            | RETURN SCOLON'''
+        | RETURN SCOLON'''
     if len(p) == 3:
         p[2] = Node("SEMI", leaf = p[2])
         p[1] = Node("RETURN", leaf = p[1])
@@ -268,7 +268,7 @@ def p_stmt_return(p):
 
 def p_se(p):
     '''SE : Assign
-          | MethodCall'''
+        | MethodCall'''
     p[0] = Node("SE", children = [p[1]])
 
 def p_assign(p):
@@ -290,13 +290,13 @@ def p_se_pre(p):
 
 def p_lhs(p):
     '''Lhs : FieldAccess
-           | ArrayAccess'''
+        | ArrayAccess'''
     p[0] = Node("Lhs", children = [p[1]])
 
 def p_ae(p):
     '''AE : Primary
-          | SE
-          | NewArray'''
+        | SE
+        | NewArray'''
     p[0] = Node("AE", children = [p[1]])
 
 
@@ -334,19 +334,19 @@ def p_primary_aeparan(p):                           ###########need Parentheses?
 
 def p_primary_misc(p):
     '''Primary : FieldAccess
-                | ArrayAccess
-                | MethodCall
-                | NewObject '''
+        | ArrayAccess
+        | MethodCall
+        | NewObject '''
     p[0] = Node("Primary", children = [p[1]])
 
 def p_primary_const(p):
     '''Primary : TRUE
         | FALSE
-        | NUMBER 
+        | NUMBER
         | THIS
         | SUPER'''
     if ("true" in p):
-        p[0] = Node("bool", leaf = p[1])    
+        p[0] = Node("bool", leaf = p[1])
     elif ("false" in p):
         p[0] = Node("bool", leaf = p[1])
     elif ("this" in p):
@@ -362,7 +362,7 @@ def p_arrayaccess(p):                           ##### Need Square Brackets?
 
 def p_FieldAccess(p):
     '''FieldAccess : Primary DOT ID
-                    | ID '''
+        | ID '''
     if len(p) == 2:
         p[1] = Node("ID", leaf = p[1])
         p[0] = Node("FieldAccess", children = [p[1]])
@@ -373,7 +373,7 @@ def p_FieldAccess(p):
 
 def p_methodcall(p):
     '''MethodCall : FieldAccess LPAREN Args RPAREN
-                  | FieldAccess LPAREN RPAREN'''
+        | FieldAccess LPAREN RPAREN'''
     p[2] = Node("LPAREN", leaf = p[2])
     if len(p) == 4:
         p[3] = Node("RPAREN", leaf = p[3])
@@ -384,7 +384,7 @@ def p_methodcall(p):
 
 def p_args(p):
     '''Args : AE COMMA Args
-            | AE'''
+        | AE'''
     if len(p) == 2:
         p[0] = Node("Args", children = [p[1]])
     else:
@@ -426,21 +426,31 @@ parser = yacc.yacc()
 
 decl = list()
 defined = list()
+fundict = defaultdict(list)
 parent = None
 done = [0]
 vars = {}
 found = [0]
 inclass = 0
 classdict = {}
+inherit = {}
 currentclass = None
 classobj = {}
+candidate = {}
 func = []
+returndict = {}
+currentfunc = None
+thisclass = None
+arglist = []
 field = 0
+type = None
 
 ##############################################################################################
 
-def wellformed(node,decl,defined,classobj):
+def wellformed(node,decl,defined,classobj,candidate):
     global currentclass
+    global thisclass
+    global inherit
     #print inclass
     #print currentclass
     #print node
@@ -449,15 +459,54 @@ def wellformed(node,decl,defined,classobj):
     
     
     # print node.type
-
-    if node.type == "FunctionCall":
-        id = node.children[0].leaf
-        if id not in func:
-            print "Wellformed ERROR: FUNCTION\"" + id + "\" NOT DECLARED before Being called"
-            sys.exit(-1)
-        wellformed(node.children[2],decl,defined,classobj)
-        return
     
+    if node.type == "MethodCall":
+        field = node.children[0]
+        if len(field.children) > 1:
+            primary = field.children[0]
+            member = field.children[2].leaf
+            if primary.type == "this":
+                if (thisclass,member) not in fundict.keys():
+                    print "Wellformed ERROR: INVALID FUNCTION CALL for"" + thisclass+ member +  for THIS"
+                    sys.exit(-1)
+                wellformed(node.children[2],decl,defined,classobj,candidate)
+                return
+            elif primary.type == "super":
+                if thisclass not in inherit.keys():
+                    print "Wellformed ERROR: CLASS\"" + thisclass + "\" DOES NOT INHERIT"
+                    sys.exit(-1)
+                classid = inherit[thisclass]
+                if (classid,member) not in fundict.keys():
+                    print "Wellformed ERROR: INVALID FUNCTION CALL for" + classid + member + " for SUPER"
+                    sys.exit(-1)
+                wellformed(node.children[2],decl,defined,classobj,candidate)
+                return
+            while primary.type != "ID":
+                iterable_list = primary.children[1:]
+                for child in iterable_list:
+                    wellformed(child,decl,defined,classobj,candidate)
+                primary = primary.children[0]
+            varid = primary.leaf
+            if varid not in classobj.keys():
+                print "WellTyped ERROR: Variable  /" + varid +" Not a CLASS VARIABLE"
+                sys.exit(-1)
+            classid = classobj[varid]
+            if (classid,member) in fundict.keys():
+                wellformed(node.children[2],decl,defined,classobj,candidate)
+                return
+            while classid in inherit.keys():
+                classid = inherit[classid]
+                if (classid,member) in fundict.keys():
+                    wellformed(node.children[2],decl,defined,classobj,candidate)
+                    return
+            print "Wellformed ERROR: INVALID FUNCTION CALL for" + classid + member + varid +" for METHODCALL for OBJECT"
+            sys.exit(-1)
+
+
+
+        wellformed(node.children[2],decl,defined,classobj,candidate)
+        return
+
     if node.type == "NewObject":
         id = node.children[1].leaf
         if id not in classdict.keys():
@@ -465,40 +514,78 @@ def wellformed(node,decl,defined,classobj):
             sys.exit(-1)
         return
 
-    
-    
+    if node.type == "NewArray":
+        wellformed(node.children[2],decl,defined,classobj,candidate)
+        Type = node.children[1]
+        if len(Type.children) > 0:
+            id = Type.children[0].leaf
+            if id not in classdict.keys():
+                print "Wellformed ERROR: ARAAY TYPE\"" + id + "\" UNDEFINED"
+                sys.exit(-1)
+        return
+
+
     if node.type == "FunDecl":
         temp_decl = decl[:]
         temp_defined = defined[:]
         temp_classobj = classobj.copy()
+        temp_candidate = candidate.copy()
         iterable_list = node.children[4:]
         for child in iterable_list:
-            wellformed(child,temp_decl,temp_defined,temp_classobj)
+            wellformed(child,temp_decl,temp_defined,temp_classobj,temp_candidate)
         return
 
     if node.type == "Formals":
         id = node.children[1].leaf
-        decl.append(id)
-        defined.append(id)
+        typenode = node.children[0]
+        if len(typenode.children) > 0:
+            type = typenode.children[0].leaf
+            classobj[id] = type
+        else:
+            type = typenode.leaf
+            decl.append(id)
+            defined.append(id)
+
         if len(node.children) > 3 :
-            wellformed(node.children[4],decl,defined,classobj)
+            wellformed(node.children[4],decl,defined,classobj,candidate)
         return
 
     if node.type == "ClassDecl":
+        thisclass = node.children[0].leaf
+        iterable_list = node.children[2:]
+        for child in iterable_list:
+            wellformed(child,decl,defined,classobj,candidate)
+        thisclass = None
         return
 
-    
-    
-    
-    
+
+    if node.type == "MemberDeclSeq_Var":
+        wellformed(node.children[1],decl,defined,classobj,candidate)
+        return
+
+    if node.type == "MemberDeclSeq_Func":
+        fundecl = node.children[0]
+        temp_decl = []
+        temp_defined = []
+        temp_classobj = {}
+        temp_candidate = {}
+        iterable_list = fundecl.children[4:]
+        for child in iterable_list:
+            wellformed(child,temp_decl,temp_defined,temp_classobj,temp_candidate)
+        wellformed(node.children[1],decl,defined,classobj,candidate)
+        return
+
+
+
     if(node.type == "if"):
         if(len(node.children) == 3):
             temp_decl = decl[:]
             temp_defined = defined[:]
             temp_classobj = classobj.copy()
+            temp_candidate = candidate.copy()
             #temp_parent = node.type
-            wellformed(node.children[0],temp_decl,temp_defined,temp_classobj)
-            wellformed(node.children[1],temp_decl,temp_defined,temp_classobj)
+            wellformed(node.children[0],temp_decl,temp_defined,temp_classobj,temp_candidate)
+            wellformed(node.children[1],temp_decl,temp_defined,temp_classobj,temp_candidate)
             #print temp_decl
             #print temp_defined
             set_def = set(temp_defined).difference(set(defined))
@@ -508,8 +595,8 @@ def wellformed(node,decl,defined,classobj):
             #print set_dec
             set_1 = set_def.difference(set_dec)
             #print set_1
-        
-            wellformed(node.children[2],temp_decl,temp_defined,temp_classobj)
+            
+            wellformed(node.children[2],temp_decl,temp_defined,temp_classobj,temp_candidate)
             #print temp_decl
             #print temp_defined
             set_def2 = set(temp_defined).difference(set(defined))
@@ -521,64 +608,69 @@ def wellformed(node,decl,defined,classobj):
             temp_decl = decl[:]
             temp_defined = defined[:]
             temp_classobj = classobj.copy()
+            temp_candidate = candidate.copy()
             #print decl[:]
             #temp_parent = node.type
             for child in iterable_list:
                 #print child
-                wellformed(child,temp_decl,temp_defined,temp_classobj)
-            #print decl[:]
+                wellformed(child,temp_decl,temp_defined,temp_classobj,temp_candidate)
+        #print decl[:]
         return
-    
-    
+
+
     elif(node.type == "while"):
         temp_decl = decl[:]
         temp_defined = defined[:]
         temp_classobj = classobj.copy()
+        temp_candidate = candidate.copy()
         #print decl[:]
         #temp_parent = node.type
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined,temp_classobj)
+            wellformed(child,temp_decl,temp_defined,temp_classobj,temp_candidate)
         #print decl[:]
         return
-    
+
     elif(node.type == "do"):
         #print "here"
         temp_decl = decl[:]
         temp_classobj = classobj.copy()
+        temp_candidate = candidate.copy()
         #temp_parent = node.type
         for child in iterable_list:
             #print defined[:]
-            wellformed(child,temp_decl,defined,temp_classobj)
+            wellformed(child,temp_decl,defined,temp_classobj,temp_candidate)
         # print defined[:]
         #print decl[:]
-            #print defined[:]
+        #print defined[:]
         return
 
     elif(node.type == "for"):
         #temp_parent = node.type
         if(node.children[0].type == "SEOpt"):
-            wellformed(node.children[0],decl,defined,classobj)
+            wellformed(node.children[0],decl,defined,classobj,candidate)
             iterable_list = node.children[1:]
         temp_decl = decl[:]
         temp_defined = defined[:]
         temp_classobj = classobj.copy()
+        temp_candidate = candidate.copy()
         for child in iterable_list:
             #print child
-            wellformed(child,temp_decl,temp_defined,temp_classobj)
+            wellformed(child,temp_decl,temp_defined,temp_classobj,temp_candidate)
         #print decl[:]
         return
 
-
+    
     elif(node.type == "Stmt"):
         #temp_parent = node.type
         if(node.children[0].type == "Block"):
             temp_decl = decl[:]
             temp_classobj = classobj.copy()
+            temp_candidate = candidate.copy()
             #print decl[:]
             for child in iterable_list:
-                wellformed(child,temp_decl,defined,temp_classobj)
-
+                wellformed(child,temp_decl,defined,temp_classobj,temp_candidate)
+            
             return
 
 
@@ -594,12 +686,12 @@ def wellformed(node,decl,defined,classobj):
                 currentclass = classid
                 iterable_list = node.children[1:]
                 for child in iterable_list:
-                    wellformed(child,decl,defined,classobj)
+                    wellformed(child,decl,defined,classobj,candidate)
                 currentclass = None
                 return
-        
-                
-                
+
+
+
 
 
     elif(node.type == "Var"):
@@ -608,7 +700,7 @@ def wellformed(node,decl,defined,classobj):
             if varid not in classobj.keys():
                 classobj[varid] = currentclass
             else:
-                print "DeclareOnce ERROR: Class Variable \"" + varid + "\" Declares Twice in same scope"
+                print "DeclareOnce ERROR: Class Variable \"" + varid + "\" Declared Twice in same scope"
                 sys.exit(-1)
         else:
             decl.append(varid)
@@ -621,32 +713,56 @@ def wellformed(node,decl,defined,classobj):
         if len(node.children) > 1:
             member = node.children[2].leaf
             primary = node.children[0]
+            #print thisclass
+            #print classdict
+            if primary.type == "this":
+                if not member in classdict[thisclass]:
+                    print "Wellformed ERROR: Class Variable \"" + member + "\" NOT DECLARED before use"
+                    sys.exit(-1)
+                return
+            if primary.type == "super":
+                if thisclass not in inherit.keys():
+                    print "Wellformed ERROR: CLASS\"" + thisclass + "\" DOES NOT INHERIT"
+                    sys.exit(-1)
+                superclass = inherit[thisclass]
+                if not member in classdict[superclass]:
+                    print "Wellformed ERROR: Class Variable \"" + member + "\" NOT DECLARED before use"
+                    sys.exit(-1)
+                return
             while primary.type != "ID":
-                iterable_list = primary.children[1:0]
+                iterable_list = primary.children[1:]
                 for child in iterable_list:
-                    wellformed(child,decl,defined,classobj)
+                    wellformed(child,decl,defined,classobj,candidate)
                 primary = primary.children[0]
             varid = primary.leaf
             if varid not in classobj.keys():
-                print "Wellformed ERROR: Class Variable \"" + varid + "\" NOT DECLARED before use"
+                print "WellTyped ERROR: Variable" + varid +" Not a CLASS VARIABLE"
                 sys.exit(-1)
-            classid = classobj[varid]
-            if member not in classdict[classid]:
-                print "Wellformed ERROR: Variable \"" + member + "\" NOT present in class " + classid
-                sys.exit(-1)
+            classname = classobj[varid]
+            if member in classdict[classname]:
+                return
+            while classname in inherit.keys():
+                classname = inherit[classname]
+                if member in classdict[classname]:
+                    return
+            print "WellTyped ERROR: FieldAccess for CLASS MEMBER NOT PRESENT IN ANY SUPERCLASS"
+            sys.exit(-1)
+        else:
+            #print node.children[0].leaf
+            wellformed(node.children[0],decl,defined,classobj,candidate)
             return
 
 
     elif node.type == "ArrayAccess":
-        iterable_list = node.children[1:0]
+        iterable_list = node.children[1:]
         for child in iterable_list:
-            wellformed(child,decl,defined,classobj)
+            wellformed(child,decl,defined,classobj,candidate)
         primary = node.children[0]
         while primary.type != "ID":
-            iterable_list = primary.children[1:0]
+            iterable_list = primary.children[1:]
             for child in iterable_list:
-                wellformed(child,decl,defined,classobj)
-
+                wellformed(child,decl,defined,classobj,candidate)
+            
             primary = primary.children[0]
         id = primary.leaf
         if id not in classobj.keys() and id not in decl:
@@ -665,14 +781,14 @@ def wellformed(node,decl,defined,classobj):
             print "Wellformed ERROR: Variable \"" + id + "\" NOT DEFINED before use"
             sys.exit(-1)
             return []
-    
+
     elif node.type == "SEEq":
         #temp_parent = node.type
         iterable_list = node.children[1:]
         for child in iterable_list:
-            #print child.type
-            wellformed(child,decl,defined,classobj)
-
+            #print child.leaf
+            wellformed(child,decl,defined,classobj,candidate)
+        
         lhs = node.children[0]
         if lhs.children[0].type == "FieldAccess" and len(lhs.children[0].children)==1:
             field = lhs.children[0]
@@ -689,31 +805,32 @@ def wellformed(node,decl,defined,classobj):
                 else:
                     defined.append(id)
         else:
-            wellformed(lhs,decl,defined,classobj)
+            wellformed(lhs,decl,defined,classobj,candidate)
 
     
-        
-        #print "-----" + id
-        #print defined[:]
-        
+    
+    #print "-----" + id
+    #print defined[:]
+    
     
     #temp_parent = node.type
     for child in iterable_list:
         #print child.type
-        wellformed(child,decl,defined,classobj)
-    
+        wellformed(child,decl,defined,classobj,candidate)
+
     return
 ################################################################################
 
 def ismain(node,done):
     iterable_list = node.children[:]
+    
+    if node.type == "ClassDecl":
+        return
+    
     if node.type == "FunDecl":
         if node.children[1].leaf == "main" and node.children[0].leaf == "void" and node.children[4].type == "RPAREN":
             
             done[0] = 1
-        elif node.children[1].leaf != "main" and node.children[0].leaf == "void":
-            print "function ERROR: Function found which is not MAIN and return type is VOID ::: NOT ALLOWED"
-            sys.exit(-1)
 
     for child in iterable_list:
         #print child.type
@@ -756,7 +873,7 @@ def checkreturn(node,found):
 
     elif(node.type == "while" or node.type == "for"):
         return
-    
+
     elif(node.type == "do"):
         #print "here"
         for child in iterable_list:
@@ -765,7 +882,7 @@ def checkreturn(node,found):
         #print decl[:]
         #print defined[:]
         return
-                
+
     elif(node.type == "RetStmt"):
         #print "Here"
         found[0] = 1
@@ -773,17 +890,17 @@ def checkreturn(node,found):
 
 
 
-    
+
     elif(node.type == "Block"):
         if(node.children[0].type == "LCURLY"):
             for child in iterable_list:
                 checkreturn(child,found)
-            
+
         return
 
     for child in iterable_list:
         checkreturn(child,found)
-    
+
     return
 
 ################################################################################
@@ -797,15 +914,15 @@ def declareonce(node,decl,parent):
     iterable_list = node.children[:]
     
     
-    if node.type == "FunctionCall":
+    if node.type == "MethodCall":
         declareonce(node.children[2],decl,parent)
         return
-    
+
     if node.type == "NewObject":
         return
-    
-    
-    
+
+
+
     if node.type == "FunDecl":
         temp_decl = []
         iterable_list = node.children[3:]
@@ -813,7 +930,7 @@ def declareonce(node,decl,parent):
         for child in iterable_list:
             declareonce(child,temp_decl,parent)
         return
-    
+
     if node.type == "Formals":
         id = node.children[1].leaf
         if id in decl:
@@ -823,15 +940,15 @@ def declareonce(node,decl,parent):
         if len(node.children) > 3 :
             declareonce(node.children[4],decl,parent)
         return
-    
+
     if node.type == "ClassDecl":
         temp_decl = []
         for child in iterable_list:
             declareonce(child,temp_decl,parent)
         return
-    
-  
-    
+
+
+
     elif(node.type == "Stmt"):
         if parent == "FunDecl" and node.children[0].type == "Block":
             for child in iterable_list:
@@ -845,9 +962,9 @@ def declareonce(node,decl,parent):
                 declareonce(child,temp_decl,parent)
             
             return
-    
-    
-    
+
+
+
     elif(node.type == "Var"):
         id = node.children[0].leaf
         if id in func or id in classdict.keys():
@@ -860,12 +977,12 @@ def declareonce(node,decl,parent):
         #print decl[:]
         iterable_list = node.children[1:]
 
-    
+
     #temp_parent = node.type
     for child in iterable_list:
         #print child.type
         declareonce(child,decl,parent)
-    
+
     return
 
 
@@ -875,13 +992,91 @@ def declareonce(node,decl,parent):
 def welltyped(node,vars,classobj):
     global field
     global currentclass
+    global thisclass
+    global arglist
     #print vars
     iterable_list = node.children[:]
     
     if node.type == "ClassDecl":
+        thisclass = node.children[0].leaf
+        iterable_list = node.children[2:]
+        temp_vars = {}
+        temp_classobj = {}
+        for child in iterable_list:
+            welltyped(child,temp_vars,temp_classobj)
+        thisclass = None
         return
     
-    if node.type == "IntConst":
+    
+    elif node.type == "MemberDeclSeq_Var":
+        return
+    
+    elif node.type == "MemberDeclSeq_Func":
+        fundecl = node.children[0]
+        temp_vars = {}
+        temp_classobj = {}
+        iterable_list = fundecl.children[4:]
+        for child in iterable_list:
+            welltyped(child,temp_vars,temp_classobj)
+        return
+
+
+    elif node.type == "MethodCall":
+        #print "here"
+        field = node.children[0]
+        if len(field.children) > 1:
+            primary = field.children[0]
+            member = field.children[2].leaf
+            arglist = []
+            if node.children[2].type == "Args":
+                welltyped(node.children[2],vars,classobj)
+                extractarg(node.children[2],vars,classobj)
+            #print arglist
+            if primary.type == "this":
+                size = len(arglist)
+                for child in fundict[(thisclass,member)]:
+                    if size == len(child):
+                        comp = [i for i, j in zip(arglist,child) if i == j]
+                        if len(comp) == size:
+                            return
+                print "WellTYped ERROR: METHODCALL CLASS\"" + thisclass + "\" THIS"
+                sys.exit(-1)
+        
+            elif primary.type == "super":
+                
+                classid = inherit[thisclass]
+                size = len(arglist)
+                for child in fundict[(classid,member)]:
+                    if size == len(child):
+                        comp = [i for i, j in zip(arglist,child) if i == j]
+                        if len(comp) == size:
+                            return
+                print "WellTYped ERROR: METHODCALL CLASS\"" + classid + "\" SUPER"
+                sys.exit(-1)
+            while primary.type != "ID":
+                iterable_list = primary.children[1:]
+                #for child in iterable_list:
+                #wellformed(child,decl,defined,classobj,candidate)
+                primary = primary.children[0]
+            varid = primary.leaf
+            classid = classobj[varid]
+            if (classid,member) in fundict.keys():
+                size = len(arglist)
+                for child in fundict[(classid,member)]:
+                    if size == len(child):
+                        comp = [i for i, j in zip(arglist,child) if i == j]
+                        if len(comp) == size:
+                            return
+            while classid in inherit.keys():
+                classid = inherit[classid]
+                if (classid,member) in fundict.keys():
+                    wellformed(node.children[2],decl,defined,classobj,candidate)
+                    return
+            print "WellTYped ERROR: METHODCALL CLASS\"" + classid + "\" for ID"
+            sys.exit(-1)
+        return
+
+    elif node.type == "IntConst":
         node.check = "int"
         return
 
@@ -893,16 +1088,22 @@ def welltyped(node,vars,classobj):
         iterable_list = node.children[4:]
 
 
-    if node.type == "Formals":
-        type = node.children[0].leaf
-        
+
+    elif node.type == "Formals":
+        typenode = node.children[0]
         id = node.children[1].leaf
-        vars[id] = type
+        if len(typenode.children) > 0:
+            type = typenode.children[0].leaf
+            classobj[id] = type
+        else:
+            type = typenode.leaf
+            vars[id] = type
+        
         if len(node.children) > 3 :
             welltyped(node.children[4],vars,classobj)
         return
 
-
+    
     elif node.type == "VarDecl":
         if node.children[0].leaf == "int" or node.children[0].leaf == "bool":
             type = node.children[0].leaf
@@ -930,7 +1131,7 @@ def welltyped(node,vars,classobj):
                 currentclass = None
         return
 
-
+    
     elif node.type == "var":
         varid = node.children[0].leaf
         if currentclass != None:
@@ -941,7 +1142,7 @@ def welltyped(node,vars,classobj):
                 sys.exit(-1)
         return
 
-
+    
     elif node.type == "Unop":
         welltyped(node.children[0],vars,classobj)
         if node.leaf == "UMINUS":
@@ -989,21 +1190,61 @@ def welltyped(node,vars,classobj):
                 node.check = "bool"
             else:
                 print "WellTyped ERROR: binop"
+                print node.children[0].check
+                print node.children[1].check
                 sys.exit(-1)
         return
 
-
+    
     elif node.type == "SEEq":
         ae = node.children[2]
         lhs = node.children[0]
-        if lhs.children[0].type == "FieldAccess":
-            if len(lhs.children[0].children) > 1:
-                node.check = "int"
+        if ae.children[0].type == "Primary" and ae.children[0].children[0].type == "NewObject":                  # Case for New obj Heap space
+            classid = ae.children[0].children[0].children[1].leaf
+            access = lhs.children[0]
+            while access.type != "ID":
+                access =  access.children[0]
+            id = access.leaf
+            if id not in classobj.keys():
+                print "WellTyped ERROR: SEEq for NewObject"
+                sys.exit(-1)
+            classid1 = classobj[id]
+            if classid != classid1:
+                print "WellTyped ERROR: SEEq for NewObject"
+                sys.exit(-1)
+            return
+
+        elif ae.children[0].type == "NewArray":                          # Case for New array Heap space
+            new = ae.children[0]
+            typenode = new.children[1]
+            if len(typenode.children) == 0 :
+                type = typenode.leaf
+            else:
+                type = typenode.children[0].leaf
+            access = lhs.children[0]
+            while access.type != "ID":
+                access =  access.children[0]
+            id = access.leaf
+            if id in classobj.keys():
+                type1 = classobj[id]
+            else:
+                type1 = vars[id]
+            if type != type1:
+                print "WellTyped ERROR: SEEq for NewArray"
+                sys.exit(-1)
+            
+            welltyped(new.children[2].children[1],vars,classobj)
+            return
+
+        elif ae.children[0].type == "SE" or ae.children[0].type == "Primary":
+            if ae.children[0].children[0].type == "MethodCall":                # for methodcall
+                welltyped(ae.children[0].children[0],vars,classobj)
                 return
-        if ae.children[0].type == "Primary":
-            if ae.children[0].children[0].type == "NewObject" or ae.children[0].children[0].type == "FunctionCall":
-                node.check = "int"
-                return
+
+
+        elif lhs.children[0].type == "FieldAccess" and len(lhs.children[0].children) > 1:
+            welltyped(lhs.children[0],vars,classobj)
+            return
         welltyped(node.children[0],vars,classobj)
         welltyped(node.children[2],vars,classobj)
         if node.children[0].check == node.children[2].check:
@@ -1036,7 +1277,7 @@ def welltyped(node,vars,classobj):
         if len(node.children) > 0:
             welltyped(node.children[0],vars,classobj)
         node.check = node.children[0].check
-    
+
 
     elif node.type == "print":
         welltyped(node.children[0],vars,classobj)
@@ -1054,7 +1295,7 @@ def welltyped(node,vars,classobj):
         if node.children[0].check != "bool":
             print "WellTyped ERROR: if"
             sys.exit(-1)
-        
+
         return
 
     elif node.type == "while":
@@ -1066,7 +1307,7 @@ def welltyped(node,vars,classobj):
         if node.children[0].check != "bool":
             print "WellTyped ERROR: while"
             sys.exit(-1)
-        
+
         return
 
     elif node.type == "do":
@@ -1095,8 +1336,8 @@ def welltyped(node,vars,classobj):
             sys.exit(-1)
 
         return
-
-
+    
+    
     elif node.type == "Lhs":
         welltyped(node.children[0],vars,classobj)
         node.check = node.children[0].check
@@ -1107,14 +1348,19 @@ def welltyped(node,vars,classobj):
 
     elif node.type == "AE":
         welltyped(node.children[0],vars,classobj)
-        #print node.children[0].check
-        node.check = node.children[0].check
-        if node.check == "error":
-            print "WellTyped ERROR: AE"
-            sys.exit(-1)
+        #print node.children[0].type
+        if node.children[0].type != "SE":
+            #print node.children[0].check
+            node.check = node.children[0].check
+            if node.check == "error":
+                print "WellTyped ERROR: AE"
+                sys.exit(-1)
+            return
+        node.check = "int"
         return
 
     elif node.type == "Primary":
+        #print node.children[0].type
         welltyped(node.children[0],vars,classobj)
         node.check = node.children[0].check
         if node.check == "error":
@@ -1122,7 +1368,7 @@ def welltyped(node,vars,classobj):
             sys.exit(-1)
         return
 
-
+    
     elif node.type == "NewArray":
         welltyped(node.children[1],vars,classobj)
         #print node.children[1].type
@@ -1134,10 +1380,9 @@ def welltyped(node,vars,classobj):
 
     elif node.type == "FieldAccess":
         if len(node.children) > 1:
-            field = 1
-            welltyped(node.children[0],vars,classobj)
+            member = node.children[2]
             node.check = "int"
-            field = 0
+            return
         else:
             welltyped(node.children[0],vars,classobj)
             node.check = node.children[0].check
@@ -1219,7 +1464,7 @@ def welltyped(node,vars,classobj):
                     sys.exit(-1)
 
             return
-
+    
     elif(node.type == "Stmt"):
         #temp_parent = node.type
         if(node.children[0].type == "Block"):
@@ -1228,7 +1473,7 @@ def welltyped(node,vars,classobj):
             #print decl[:]
             for child in iterable_list:
                 welltyped(child,temp_vars,temp_classobj)
-        
+            
             return
 
 
@@ -1248,6 +1493,7 @@ def find(node):
     global inclass
     global currentclass
     global classdict
+    global type
     #print inclass
     #print currentclass
     #print node
@@ -1255,99 +1501,195 @@ def find(node):
     iterable_list = node.children[:]
     
     
-    if node.type == "FunDecl":
+    if node.type == "FunDecl" and inclass == 0:
         funid = node.children[1].leaf
         func.append(funid)
-        for child in iterable_list:
-            find(child)
         return
-
-    if node.type == "ClassDecl":
+    
+    elif node.type == "FunDecl" and inclass == 1:
+        return
+    
+    elif node.type == "ClassDecl":
         iterable_list = node.children[2:]
         inclass = 1
         currentclass = node.children[0].leaf
+        classdict[currentclass] = []
         for child in iterable_list:
             find(child)
         inclass = 0
         currentclass = None
         return
 
+    elif node.type == "Type" and len(node.children) == 0:
+        type = node.leaf
+        return
 
+    
     elif(node.type == "Var"):
         id = node.children[0].leaf
         if inclass == 1:
             if  currentclass not in classdict.keys():
-                classdict[currentclass] = [id]
+                classdict[currentclass] = [type]
+                classdict[currentclass].append(id)
             else:
+                classdict[currentclass].append(type)
                 classdict[currentclass].append(id)
         iterable_list = node.children[1:]
 
     #temp_parent = node.type
     for child in iterable_list:
         #print child.type
-            find(child)
+        find(child)
 
     return
 
 
 ################################################################################
 
+def findfunc(node):
+    global func
+    global inclass
+    global currentclass
+    global fundict
+    global type
+    global inherit
+    #print inclass
+    #print currentclass
+    #print node
+    #print node.type
+    iterable_list = node.children[:]
+    
+    '''
+        if node.type == "FunDecl":
+        funid = node.children[1].leaf
+        func.append(funid)
+        for child in iterable_list:
+        find(child)
+        return
+        '''
+    if node.type == "ClassDecl":
+        iterable_list = node.children[2:]
+        currentclass = node.children[0].leaf
+        if node.children[1].type == "Extends":
+            extend = node.children[1]
+            super = extend.children[0].leaf
+            inherit[currentclass] = super
+        inclass = 1
+        currentclass = node.children[0].leaf
+        for child in iterable_list:
+            findfunc(child)
+        inclass = 0
+        currentclass = None
+        return
+    
+    
+    elif node.type == "FunDecl" and inclass == 1:
+        global arglist
+        fundecl = node
+        funid = fundecl.children[1].leaf
+        del arglist[:]
+        if fundecl.children[4].type == "Formals":
+            findarg(fundecl.children[4])
+        size = len(arglist)
+        if (currentclass,funid) not in fundict.keys():
+            temp_arglist = arglist[:]
+            fundict[(currentclass,funid)] = [temp_arglist]
+            return
+        for child in fundict[(currentclass,funid)]:
+            
+            if size == len(child):
+                comp = [i for i, j in zip(arglist,child) if i == j]
+                if len(comp) == size:
+                    print "DeclareOnce ERROR: FUNCTION \"" + funid + "\" Declared Twice in same CLASS"
+                    exit(-1)
+        
+        temp_arglist = arglist[:]
+        fundict[(currentclass,funid)].append(temp_arglist)
+        
+
+        return
+    
+    
+    
+    #temp_parent = node.type
+    for child in iterable_list:
+        #print child.type
+        findfunc(child)
+    
+    return
+
+################################################################################
+
+def findarg(node):
+    global arglist
+    typenode = node.children[0]
+    if len(typenode.children) > 0:
+        type = typenode.children[0].leaf
+    else:
+        type = typenode.leaf
+    arglist.append(type)
+    if len(node.children) > 3:
+        findarg(node.children[4])
+    else:
+        return
+
+################################################################################
+
+def extractarg(node,vars,classobj):
+    global arglist
+    welltyped(node.children[0],vars,classobj)
+    arglist.append(node.children[0].check)
+    
+    if len(node.children) > 1:
+        extractarg(node.children[2],vars,classobj)
+    else:
+        return
+
+
+################################################################################
+
 if __name__ == "__main__":
     s = '''
-        
-        int a,b,c,d;
-        
-        class myclass extends x
+        void f1(int n)
         {
-        int x,y,z;
-        int temp(int l)
-        {
-            super.x=l;
-            return c;
+        int x, y, z;
+        x = 4;
+        y=1;
+        z = n;
+        
+        n = n-1;
+        
+        if n > 0 then
+		f1(n);
+        
+        print(n);
+        z=x+y+z;
+        print(z);
+        
+        return ;
         }
-        }
+        
         void main()
         {
-        int a,b;
-        myclass obj;
-        int arr[];
-        a = 1;
-        obj = new myclass ();
-        obj.x = a;
-        obj.y = 1;
-        arr = new int [10];
-        arr[1]=0;
+        int x, y, z;
+        x = 4;	
+        y=1;
+        z = 1;
         
-        {
-        int fg;
-        int ef ;
+        f1(x);
         
+        z=x+y+z;
+        print(z);
         
-        }
-        d=1;
-        c=1;
-        
-        b=c*d;
-        a = temp(3,4);
         return;
-        
         }
-        
-        int temp( int b, int x, int y)
-        {
-        {
-        int b;
-        }
-        
-        return 3;
-        
-        }
-            '''
+
+
+
+        '''
     result = yacc.parse(s)
     print 'Done with parsing'
     
-    
-    """
     ismain(result,done)
     if done[0] == 0:
         print "Main function ERROR: Main Function Not WellFormed"
@@ -1355,14 +1697,18 @@ if __name__ == "__main__":
     
     isreturn(result)
     
+
+
     find(result)
-    #print func[:]
+    findfunc(result)
+    #print inherit
+    #print fundict
+    #print func
     #print classdict
+    
+    #print func[:]
     declareonce(result,decl,parent)
     
-    wellformed(result,decl,defined,classobj)
-    """
-    #print vars
-    '''
-    welltyped(result,vars,classobj) '''
+    wellformed(result,decl,defined,classobj,candidate)
     
+    welltyped(result,vars,classobj)

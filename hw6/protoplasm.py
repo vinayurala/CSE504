@@ -2,8 +2,8 @@ import sys
 from ply.yacc import *
 from parser import *
 from gencode import *
-#from liveness import *
-#from MIPS import *
+from liveness import *
+from MIPS import *
 
 if (len(sys.argv) != 2):
     print "Usage: python " + sys.argv[0] + " <Protofilename>"
@@ -22,8 +22,7 @@ line_str = "".join(lines)
 #astRoot = yacc.parse(line_str)
 astRoot = yacc.parse(line_str)
 #print 'Done with parsing'
-"""
-print "In wellformed"
+
 ismain(astRoot,done)
 if done[0] == 0:
     print "Main function ERROR: Main Function Not WellFormed"
@@ -38,11 +37,12 @@ if done == 0:
 isreturn(astRoot)
 
 find(astRoot)
+findfunc(astRoot)
 declareonce(astRoot,decl,parent)
 
-wellformed(astRoot,decl,defined,classobj)
+wellformed(astRoot,decl,defined,classobj, candidate)
 welltyped(astRoot, vars, classobj)
-"""
+
 """
 #wellformed(astRoot, decl, defined, classobj)
 """
@@ -59,7 +59,7 @@ for line in gencode_blocks:
         pass
     else:
         function_lines.append(line)
-"""
+
 coloredMapList = list()
 spilledMapList = list()
 argColorList = list()
@@ -82,6 +82,14 @@ for icLines in all_lines:
     functions.append(func_name)
     coloredList = spilledList = list()
     argColorMap = dict()
+"""
+print "Colored List:"
+print coloredMapList
+print "Spilled List:"
+print spilledMapList
+print "Args Color List:"
+print argColorList
+"""
 
 asmLines = list()
 mipsLines = list()
@@ -134,5 +142,5 @@ for line in asmLines:
     line_str = "".join(line)
     f1.write(line_str)
 f1.close()
-print "Compilation succeeded and output written to " + str(targetFile)
-"""                     
+#print "Compilation succeeded and output written to " + str(targetFile)
+
