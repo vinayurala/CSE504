@@ -1,10 +1,11 @@
 int a,b,c,d;
         
-class myclass extends x
+class myclass 
 {
-   int x,y,z;
+   int x, y,z;
    int temp(int l)
    {
+     int x;
      //super.x=l;
      //return super.x;
      x = l;
@@ -31,8 +32,10 @@ void main()
    c=1;
         
    b=c*d;
-   //a = temp(3,4);
-   b = obj.temp(c++, ++b-2); 
+   a = temp(b, 3,4);
+   b = obj.temp(c++); 
+   print (b);
+   print (a);
    return;
  }
         

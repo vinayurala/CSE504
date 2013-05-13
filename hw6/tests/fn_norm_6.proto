@@ -1,0 +1,9 @@
+void main()
+{
+	int x,y;
+	x = 50;
+	y = x - 40 - 2;
+	print(y);
+	return;
+}
+

@@ -1,0 +1,20 @@
+class A
+{
+    int x;
+}
+
+void main()
+{
+    int a;
+    A obj;
+
+
+    obj.x = 9; 
+    a=1;
+
+    print(a);
+    print(obj.x);
+
+    return;
+}
+

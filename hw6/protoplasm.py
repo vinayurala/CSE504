@@ -12,28 +12,18 @@ if (len(sys.argv) != 2):
 try:
     f = open(sys.argv[1], "r")
     lines = f.read()
-    #astRoot = yacc.parse(f.read())
 except IOError:
     print "File " + sys.argv[1] + " not found!!"
     sys.exit(-1)
 
 line_str = "".join(lines)
-#result = parser.parse(line_str)
-#astRoot = yacc.parse(line_str)
 astRoot = yacc.parse(line_str)
-#print 'Done with parsing'
 
 ismain(astRoot,done)
 if done[0] == 0:
     print "Main function ERROR: Main Function Not WellFormed"
     sys.exit(-1)
 
-'''
-ismain(astRoot)
-if done == 0:
-    print "Main function ERROR: Main Function Not WellFormed"
-    sys.exit(-1)
-'''
 isreturn(astRoot)
 
 find(astRoot)
@@ -43,10 +33,6 @@ declareonce(astRoot,decl,parent)
 wellformed(astRoot,decl,defined,classobj, candidate)
 welltyped(astRoot, vars, classobj)
 
-"""
-#wellformed(astRoot, decl, defined, classobj)
-"""
-#print "AST wellformed"
 gencode_blocks = final_codegen(astRoot)
 function_lines = list()
 all_lines = list()
@@ -82,14 +68,6 @@ for icLines in all_lines:
     functions.append(func_name)
     coloredList = spilledList = list()
     argColorMap = dict()
-"""
-print "Colored List:"
-print coloredMapList
-print "Spilled List:"
-print spilledMapList
-print "Args Color List:"
-print argColorList
-"""
 
 asmLines = list()
 mipsLines = list()
@@ -128,12 +106,6 @@ for data_section in data_section_list:
             for var in spilledVars:
                 scratchText += spilledVars[var] + ":\t .word 0\n"
 
-'''
-print "MIPS code: "
-for lines in asmLines:
-    line_str = "".join(lines)
-    print line_str
-'''
 fileName = sys.argv[1]
 (targetFile, _) = fileName.split('.', 2)
 targetFile += ".asm"
@@ -142,5 +114,5 @@ for line in asmLines:
     line_str = "".join(line)
     f1.write(line_str)
 f1.close()
-#print "Compilation succeeded and output written to " + str(targetFile)
+
 

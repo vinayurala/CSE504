@@ -1,0 +1,28 @@
+// Checking voidfunction call with 1 argument
+// without using void variables
+
+void f1(int k)
+{
+    int x, y, z;
+    x=k;
+    y=10;
+    z=y-x;
+
+    print(z);
+
+	if (z>1) then
+		f1(z);
+	
+
+	return ;
+}
+
+void main()
+{
+	int a;
+	a=input();
+
+	f1(a);
+
+	return;
+}

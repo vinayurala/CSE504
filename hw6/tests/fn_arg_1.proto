@@ -1,0 +1,26 @@
+void func(int x[], int k)
+{
+	print(x[0]);	
+	//x[1][0] = 3;
+	//print(x[1][0]);
+	//x[1][1] = 4;
+	print(k);
+	
+
+	return;
+}
+
+
+void main()
+{
+	int x[];
+	x = new int[2];
+	x[0] = 1;
+	print(x[0]);
+
+	func(x, 10);
+	
+	print(x[0]);
+
+	return;
+}

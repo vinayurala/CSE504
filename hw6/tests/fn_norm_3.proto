@@ -1,0 +1,23 @@
+// Checking normal function call with 1 argument
+
+void f1(int k)
+{
+    int x, y, z;
+    x=k;
+    y=10;
+    z=x+y;
+    print(z);
+
+	return ;
+}
+
+void main()
+{
+	int a;
+	void p;
+	a=1;
+
+	p = f1(a);
+
+	return;
+}

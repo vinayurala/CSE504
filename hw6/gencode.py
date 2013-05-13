@@ -96,6 +96,8 @@ def clear_stack():
                     str4 = tList.pop()                  # variable
                     post_dec_str = tVar + str(tID) + " = " + str4 + " + 1\n"
                     post_op_list.append(post_dec_str)
+                    tStr = tVar + str(tID) + " = " + str4
+                    temp_blk.append(tStr)
                     tStr = tVar + str(tID)
                     scratch_stack.append(tStr)
                     tID += 1
@@ -252,6 +254,9 @@ def clear_stack():
                     postStr = tVar + str(tID) + " = " + str1 + " " + str2[0] + " 1\n"
                     tID += 1
                     post_op_list.append(postStr)
+                    temp_str = tVar + str(tID - 1) + " = " + str1
+                    temp_blk.append(temp_str)
+                    temp_str = str()
                     str1 = tVar + str(tID - 1)
                 if insert_flag:
                     scratch_stack.insert(len(scratch_stack) - 1, str1)
@@ -406,7 +411,7 @@ def gencode(node):
         idNode = node.children[1]
         str1 = idNode.leaf 
         if seen_class:
-            str1 = seen_class + "_" + idNode.leaf
+            str1 = seen_class + idNode.leaf
             function_class_aliases[(seen_class, idNode.leaf)] = str1
 
         if len(node.children) != 7:
@@ -571,7 +576,7 @@ def gencode(node):
     elif node.type is "PrimaryAccess":
         gencode(node.children[0])
 
-    elif node.type is "MethodCall":                         # TODO: obj[i].some_func
+    elif node.type is "MethodCall":                         
         str1 = str()
         function_called = True
         gencode(node.children[0])
@@ -658,7 +663,10 @@ def gencode(node):
             if array_obj_name:                                              # Field access for an object in an object array
                 class_name = classobjdict[array_obj_name]
             else:
-                class_name = classobjdict[str1]
+                if str1 == "super" or str1 == "this":
+                    class_name = seen_class
+                else:
+                    class_name = classobjdict[str1]
             idNode = node.children[2]
             function_alias = (class_name, idNode.leaf)
             
@@ -846,8 +854,8 @@ def final_codegen(root):
 
     strip_types()
     gencode(root)
-    #for line in temp_blk:
-    #    print line
+    for line in temp_blk:
+        print line
     return temp_blk
 
 if __name__ == "__main__":

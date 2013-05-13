@@ -1,0 +1,59 @@
+int test3()
+{
+    int x, a;
+    x=30;
+
+    print(x);
+    return x;
+}
+
+
+class C
+{
+	int p;
+}
+
+
+class B extends C
+{
+	int b;
+    int y;
+
+    int test2()
+    {
+    	print(20);
+        return 20;
+    }
+}
+
+
+class A extends B
+{
+    int x;
+
+    void test1()
+    {
+    	print(10);
+    }
+}
+
+void main()
+{
+    int a, b;
+    A obj;
+
+    obj = new A();
+
+    a = obj.test2();
+    b = test3();
+
+    obj.x = 2; 
+    obj.y = 9;     
+
+    print(a);
+    print(b);
+    print(obj.y);
+
+    return;
+}
+

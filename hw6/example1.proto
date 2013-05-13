@@ -7,9 +7,6 @@ class c1
                 int c, d;
                 c = 1;
                 d = c + a * b;
-                print (c);
-                print (a);
-                print (b);
                 print (d);
                 return d;
         }
@@ -21,6 +18,7 @@ class c2 extends c1
         int func1 (int a, int b, int c)
         {
                 int e;
+                b = super.a;
                 e = a * b - c;
                 print (e);
                 return e;
@@ -50,5 +48,5 @@ void main()
         print (c2obj.a);
         print (c);
         print (d);
-        return;
+        return; 
 }

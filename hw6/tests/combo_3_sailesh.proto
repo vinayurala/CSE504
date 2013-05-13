@@ -1,0 +1,42 @@
+// Ultimate test case with answer 2013
+// Author : Sailesh Mittal
+
+class A {
+		int x;
+		bool y;
+		int z[];
+}
+
+// Create an array of A of size n.
+A create[] (int n) {
+		int i;
+		A a[];
+		a = new A[n];
+		i = 0;
+		while (i<n) do {
+				a[i] = new A();
+				a[i].x = i;
+				a[i].y = false;
+				a[i].z = new int[5];
+				i++;
+		}
+		print(n);
+		return a;
+}
+
+int f(A a) {
+		print(a.x);
+		return 0;
+}
+
+void main () {
+		A a[];
+		int n;
+		n = 2;
+		a = create(n);
+		n = f(a[0]);
+		print(a[1].x);
+		a[0].z[1] = 3;
+		print(a[0].z[1]);
+		return;
+}

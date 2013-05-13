@@ -1,0 +1,36 @@
+class A
+{
+  int x;
+  void f1(int x)
+  {
+     int t;
+     t = 10;
+     print (x + t);
+     
+     return;
+  }
+  int f2(int x, int y)
+  {
+     bool t;
+     t = x + y;
+     print (t);
+
+     return x;
+  }
+}
+
+void main()
+{
+  A obj;
+  int y, z;
+
+  obj = new A();
+  y = 10;
+  z = 20;
+
+  obj.f1(y);
+  y = obj.f2(y, z);
+  print (y);
+   
+   return;
+}

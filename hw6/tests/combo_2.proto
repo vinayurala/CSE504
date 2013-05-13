@@ -1,0 +1,30 @@
+
+class B{
+		int y;
+}
+class A
+{
+		int x;
+		bool b;
+		B newobj;
+}
+int myfunc(int a, A obj)
+{
+		print(a);
+		print (obj.x);
+		obj.x = 7;
+		obj.newobj = new B();
+		obj.newobj.y = 8;
+		return 0;
+}
+void main()
+{
+		A abc;
+		int i ;
+		abc = new A();
+		abc.x = 1;
+		abc.b = false;
+		i = myfunc(1,abc);
+		print(abc.newobj.y); 
+		return;
+}
